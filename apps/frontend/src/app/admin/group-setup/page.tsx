@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
+import { InlinePageLoading } from '@/components/layout/page-loading';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { authFetch } from '@/lib/auth-fetch';
 
 interface PaymentGroup {
   id: string;
@@ -57,7 +59,7 @@ export default function GroupSetupPage() {
 
   const fetchGroups = async () => {
     try {
-      const response = await fetch('/api/admin/payment-groups');
+      const response = await authFetch('/api/admin/payment-groups');
       if (response.ok) {
         const data = await response.json();
         setGroups(data);
@@ -77,7 +79,7 @@ export default function GroupSetupPage() {
         ? `/api/admin/payment-groups/${editingGroup.id}`
         : '/api/admin/payment-groups';
       
-      const response = await fetch(url, {
+      const response = await authFetch(url, {
         method: editingGroup ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -109,7 +111,7 @@ export default function GroupSetupPage() {
     if (!confirm('Are you sure you want to delete this group?')) return;
 
     try {
-      const response = await fetch(`/api/admin/payment-groups/${id}`, {
+      const response = await authFetch(`/api/admin/payment-groups/${id}`, {
         method: 'DELETE',
       });
 
@@ -135,7 +137,15 @@ export default function GroupSetupPage() {
   });
 
   if (loading) {
-    return <div className="p-8">Loading...</div>;
+    return (
+      <SidebarLayout>
+        <InlinePageLoading
+          title="Group Setup"
+          description="Configure payment groups and company information"
+          message="Loading payment groups..."
+        />
+      </SidebarLayout>
+    );
   }
 
   return (

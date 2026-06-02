@@ -2,6 +2,8 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { SidebarLayout } from '@/components/layout/sidebar-layout';
+import { InlinePageLoading } from '@/components/layout/page-loading';
 
 export default function ProviderClaimsPage() {
   const router = useRouter();
@@ -12,11 +14,12 @@ export default function ProviderClaimsPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Loading claims...</p>
-      </div>
-    </div>
+    <SidebarLayout>
+      <InlinePageLoading
+        title="Claims History"
+        description="Review submitted claims and their statuses"
+        message="Opening claims history..."
+      />
+    </SidebarLayout>
   );
 }

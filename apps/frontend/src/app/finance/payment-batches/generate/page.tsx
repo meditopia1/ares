@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AlertTriangle, CheckCircle, FileText } from 'lucide-react';
 import { formatCurrency } from '@/lib/payment-processing';
+import { authFetch } from '@/lib/auth-fetch';
 
 export default function GeneratePaymentBatchPage() {
   const router = useRouter();
@@ -25,7 +26,7 @@ export default function GeneratePaymentBatchPage() {
     setResult(null);
 
     try {
-      const response = await fetch('/api/finance/payment-batches/generate', {
+      const response = await authFetch('/api/finance/payment-batches/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

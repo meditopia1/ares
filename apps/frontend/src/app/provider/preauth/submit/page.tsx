@@ -4,15 +4,40 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
+import { InlinePageLoading } from '@/components/layout/page-loading';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { authFetch } from '@/lib/auth-fetch';
+
+const getTodayLocalDate = () => {
+  const now = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+  return local.toISOString().split('T')[0];
+};
+
+interface LookupMember {
+  id: string;
+  member_number: string;
+  first_name: string;
+  last_name: string;
+  id_number: string | null;
+  status: string;
+  plan_name: string | null;
+  email: string | null;
+  mobile: string | null;
+}
 
 export default function PreAuthSubmissionPage() {
   const router = useRouter();
   const { user, loading, isAuthenticated } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLookingUp, setIsLookingUp] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [preauthNumber, setPreauthNumber] = useState('');
+  const [formError, setFormError] = useState('');
+  const [lookupMessage, setLookupMessage] = useState('');
+  const [member, setMember] = useState<LookupMember | null>(null);
 
   // Patient Information
   const [memberNumber, setMemberNumber] = useState('');
@@ -43,15 +68,38 @@ export default function PreAuthSubmissionPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
+      <SidebarLayout>
+        <InlinePageLoading
+          title="Request Pre-Authorization"
+          description="Submit a pre-authorization request for planned procedures"
+          message="Opening pre-authorization form..."
+        />
+      </SidebarLayout>
     );
   }
 
   if (!user) {
     return null;
   }
+
+  const resetForm = () => {
+    setMemberNumber('');
+    setPatientName('');
+    setIdNumber('');
+    setProcedureType('');
+    setDiagnosisCode('');
+    setProcedureCode('');
+    setProposedDate('');
+    setEstimatedCost('');
+    setUrgency('routine');
+    setClinicalNotes('');
+    setMedicalHistory('');
+    setTreatmentPlan('');
+    setDocuments([]);
+    setMember(null);
+    setLookupMessage('');
+    setFormError('');
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -63,40 +111,107 @@ export default function PreAuthSubmissionPage() {
     setDocuments(documents.filter((_, i) => i !== index));
   };
 
+  const handleMemberLookup = async () => {
+    if (!memberNumber && !idNumber) {
+      setFormError('Enter a member number or ID number first.');
+      return;
+    }
+
+    setIsLookingUp(true);
+    setFormError('');
+    setLookupMessage('');
+
+    try {
+      const response = await authFetch('/api/provider/eligibility', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          member_number: memberNumber || undefined,
+          id_number: idNumber || undefined
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMember(null);
+        setLookupMessage(data.error || 'Member lookup failed.');
+        return;
+      }
+
+      if (!data.eligible || !data.member) {
+        setMember(null);
+        setLookupMessage(data.message || 'Member not found or not eligible.');
+        return;
+      }
+
+      setMember(data.member);
+      setPatientName(`${data.member.first_name || ''} ${data.member.last_name || ''}`.trim());
+      setIdNumber(data.member.id_number || idNumber);
+      setMemberNumber(data.member.member_number || memberNumber);
+      setLookupMessage(`Member found: ${data.member.first_name} ${data.member.last_name}`);
+    } catch (error) {
+      console.error('Error looking up member:', error);
+      setMember(null);
+      setLookupMessage('Failed to look up member. Please try again.');
+    } finally {
+      setIsLookingUp(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError('');
+
+    if (!member?.id) {
+      setFormError('Please verify the member before submitting the pre-authorization.');
+      return;
+    }
+
     setIsSubmitting(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setShowSuccess(true);
+    try {
+      const response = await authFetch('/api/provider/preauth/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          member_id: member.id,
+          service_date: proposedDate,
+          estimated_cost: parseFloat(estimatedCost || '0'),
+          diagnosis_codes: [diagnosisCode],
+          procedure_codes: [procedureCode],
+          clinical_notes: [clinicalNotes, medicalHistory, treatmentPlan].filter(Boolean).join('\n\n'),
+          urgency
+        })
+      });
 
-      // Reset form after 3 seconds
+      const data = await response.json();
+
+      if (!response.ok) {
+        setFormError(data.error || 'Failed to submit pre-authorization request.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      setPreauthNumber(data.preauth_number || '');
+      setShowSuccess(true);
+      setIsSubmitting(false);
+
       setTimeout(() => {
         setShowSuccess(false);
-        // Reset all fields
-        setMemberNumber('');
-        setPatientName('');
-        setIdNumber('');
-        setProcedureType('');
-        setDiagnosisCode('');
-        setProcedureCode('');
-        setProposedDate('');
-        setEstimatedCost('');
-        setUrgency('routine');
-        setClinicalNotes('');
-        setMedicalHistory('');
-        setTreatmentPlan('');
-        setDocuments([]);
-      }, 3000);
-    }, 1500);
+        resetForm();
+        router.push('/provider/preauth');
+      }, 2500);
+    } catch (error) {
+      console.error('Error submitting pre-authorization:', error);
+      setFormError('Failed to submit pre-authorization request. Please try again.');
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <SidebarLayout>
       <div className="space-y-6">
-        {/* Page Header */}
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Request Pre-Authorization</h1>
           <p className="text-gray-600 mt-1">
@@ -104,48 +219,35 @@ export default function PreAuthSubmissionPage() {
           </p>
         </div>
 
-        {/* Success Message */}
         {showSuccess && (
           <Card className="border-green-500 bg-green-50">
             <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <svg
-                  className="w-6 h-6 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <div>
-                  <p className="font-medium text-green-900">
-                    Pre-Authorization Request Submitted!
-                  </p>
-                  <p className="text-sm text-green-700">
-                    Reference: PA-20240111-{Math.floor(Math.random() * 10000).toString().padStart(6, '0')}
-                  </p>
-                  <p className="text-sm text-green-700">
-                    You will receive a response within 24-48 hours
-                  </p>
-                </div>
+              <div className="space-y-1">
+                <p className="font-medium text-green-900">Pre-Authorization Request Submitted</p>
+                <p className="text-sm text-green-700">
+                  Reference: {preauthNumber || 'Generated successfully'}
+                </p>
+                <p className="text-sm text-green-700">
+                  You will receive a response once the claims team reviews the request.
+                </p>
               </div>
             </CardContent>
           </Card>
         )}
 
+        {formError && (
+          <Card className="border-red-500 bg-red-50">
+            <CardContent className="pt-6 text-sm text-red-700">{formError}</CardContent>
+          </Card>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Patient Information */}
           <Card>
             <CardHeader>
               <CardTitle>Patient Information</CardTitle>
-              <CardDescription>Enter patient details for pre-authorization</CardDescription>
+              <CardDescription>Look up the member first so the request links to the correct record</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <label htmlFor="memberNumber" className="text-sm font-medium">
@@ -153,353 +255,293 @@ export default function PreAuthSubmissionPage() {
                   </label>
                   <Input
                     id="memberNumber"
-                    placeholder="M-2024-5678"
+                    placeholder="ARC1000417"
                     value={memberNumber}
                     onChange={(e) => setMemberNumber(e.target.value)}
-                    required
                   />
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="patientName" className="text-sm font-medium">
-                    Patient Name <span className="text-red-500">*</span>
+                    Patient Name
                   </label>
                   <Input
                     id="patientName"
-                    placeholder="John Smith"
+                    placeholder="Auto-filled after lookup"
                     value={patientName}
                     onChange={(e) => setPatientName(e.target.value)}
-                    required
+                    disabled={!!member}
                   />
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="idNumber" className="text-sm font-medium">
-                    ID Number <span className="text-red-500">*</span>
+                    ID Number
                   </label>
                   <Input
                     id="idNumber"
                     placeholder="8001015800083"
                     value={idNumber}
                     onChange={(e) => setIdNumber(e.target.value)}
-                    required
+                    disabled={!!member}
                   />
                 </div>
               </div>
+
+              <div className="flex gap-3">
+                <Button type="button" onClick={handleMemberLookup} disabled={isLookingUp}>
+                  {isLookingUp ? 'Checking Member...' : 'Verify Member'}
+                </Button>
+                {member && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setMember(null);
+                      setLookupMessage('');
+                    }}
+                  >
+                    Clear Member
+                  </Button>
+                )}
+              </div>
+
+              {lookupMessage && (
+                <p className={`text-sm ${member ? 'text-green-700' : 'text-amber-700'}`}>{lookupMessage}</p>
+              )}
+
+              {member && (
+                <div className="rounded-lg border bg-green-50 border-green-200 p-4 text-sm">
+                  <p className="font-medium text-green-900">
+                    {member.first_name} {member.last_name}
+                  </p>
+                  <p className="text-green-800">Member Number: {member.member_number}</p>
+                  <p className="text-green-800">Plan: {member.plan_name || 'Not set'}</p>
+                  <p className="text-green-800">Status: {member.status}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Procedure Information */}
           <Card>
             <CardHeader>
               <CardTitle>Procedure Information</CardTitle>
               <CardDescription>Details of the planned procedure</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label htmlFor="procedureType" className="text-sm font-medium">
-                      Procedure Type <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      id="procedureType"
-                      value={procedureType}
-                      onChange={(e) => setProcedureType(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                      required
-                    >
-                      <option value="">Select procedure type</option>
-                      <option value="surgery">Surgery</option>
-                      <option value="hospitalization">Hospitalization</option>
-                      <option value="specialist_consultation">Specialist Consultation</option>
-                      <option value="diagnostic_imaging">Diagnostic Imaging (MRI, CT)</option>
-                      <option value="oncology">Oncology Treatment</option>
-                      <option value="chronic_medication">Chronic Medication</option>
-                      <option value="dental_procedure">Dental Procedure</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="urgency" className="text-sm font-medium">
-                      Urgency <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      id="urgency"
-                      value={urgency}
-                      onChange={(e) => setUrgency(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                      required
-                    >
-                      <option value="routine">Routine (7+ days)</option>
-                      <option value="urgent">Urgent (2-7 days)</option>
-                      <option value="emergency">Emergency (within 24 hours)</option>
-                    </select>
-                  </div>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="procedureType" className="text-sm font-medium">
+                    Procedure Type <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="procedureType"
+                    value={procedureType}
+                    onChange={(e) => setProcedureType(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
+                  >
+                    <option value="">Select procedure type</option>
+                    <option value="surgery">Surgery</option>
+                    <option value="hospitalization">Hospitalization</option>
+                    <option value="specialist_consultation">Specialist Consultation</option>
+                    <option value="diagnostic_imaging">Diagnostic Imaging</option>
+                    <option value="oncology">Oncology Treatment</option>
+                    <option value="chronic_medication">Chronic Medication</option>
+                    <option value="dental_procedure">Dental Procedure</option>
+                    <option value="other">Other</option>
+                  </select>
                 </div>
+                <div className="space-y-2">
+                  <label htmlFor="urgency" className="text-sm font-medium">
+                    Urgency <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="urgency"
+                    value={urgency}
+                    onChange={(e) => setUrgency(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
+                  >
+                    <option value="routine">Routine</option>
+                    <option value="urgent">Urgent</option>
+                    <option value="emergency">Emergency</option>
+                  </select>
+                </div>
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <label htmlFor="diagnosisCode" className="text-sm font-medium">
-                      Diagnosis Code <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      id="diagnosisCode"
-                      placeholder="ICD-10 (e.g., C50.9)"
-                      value={diagnosisCode}
-                      onChange={(e) => setDiagnosisCode(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="procedureCode" className="text-sm font-medium">
-                      Procedure Code <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      id="procedureCode"
-                      placeholder="e.g., 3001"
-                      value={procedureCode}
-                      onChange={(e) => setProcedureCode(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="estimatedCost" className="text-sm font-medium">
-                      Estimated Cost (R) <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      id="estimatedCost"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={estimatedCost}
-                      onChange={(e) => setEstimatedCost(e.target.value)}
-                      required
-                    />
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="diagnosisCode" className="text-sm font-medium">
+                    Diagnosis Code <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    id="diagnosisCode"
+                    placeholder="ICD-10 (e.g. C50.9)"
+                    value={diagnosisCode}
+                    onChange={(e) => setDiagnosisCode(e.target.value)}
+                    required
+                  />
                 </div>
+                <div className="space-y-2">
+                  <label htmlFor="procedureCode" className="text-sm font-medium">
+                    Procedure Code <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    id="procedureCode"
+                    placeholder="e.g. 3001"
+                    value={procedureCode}
+                    onChange={(e) => setProcedureCode(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="estimatedCost" className="text-sm font-medium">
+                    Estimated Cost (R) <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    id="estimatedCost"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={estimatedCost}
+                    onChange={(e) => setEstimatedCost(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
 
                 <div className="space-y-2">
                   <label htmlFor="proposedDate" className="text-sm font-medium">
                     Proposed Procedure Date <span className="text-red-500">*</span>
                   </label>
-                  <Input
-                    id="proposedDate"
-                    type="date"
-                    value={proposedDate}
-                    onChange={(e) => setProposedDate(e.target.value)}
-                    required
-                  />
+                  <div className="inline-flex items-center gap-2">
+                    <Input
+                      id="proposedDate"
+                      type="date"
+                      value={proposedDate}
+                      onChange={(e) => setProposedDate(e.target.value)}
+                      required
+                      max={getTodayLocalDate()}
+                      className="w-[220px]"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0 border-blue-200 bg-blue-50 px-3 text-blue-700 hover:bg-blue-100 hover:text-blue-800"
+                      onClick={() => setProposedDate(getTodayLocalDate())}
+                    >
+                      Today
+                    </Button>
+                  </div>
                 </div>
-              </div>
             </CardContent>
           </Card>
 
-          {/* Clinical Information */}
           <Card>
             <CardHeader>
               <CardTitle>Clinical Information</CardTitle>
-              <CardDescription>
-                Provide detailed clinical justification for the procedure
-              </CardDescription>
+              <CardDescription>Provide clinical justification for the procedure</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="clinicalNotes" className="text-sm font-medium">
-                    Clinical Notes <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    id="clinicalNotes"
-                    rows={4}
-                    placeholder="Describe the patient's condition and symptoms..."
-                    value={clinicalNotes}
-                    onChange={(e) => setClinicalNotes(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="medicalHistory" className="text-sm font-medium">
-                    Relevant Medical History
-                  </label>
-                  <textarea
-                    id="medicalHistory"
-                    rows={3}
-                    placeholder="Previous treatments, chronic conditions, allergies..."
-                    value={medicalHistory}
-                    onChange={(e) => setMedicalHistory(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="treatmentPlan" className="text-sm font-medium">
-                    Treatment Plan <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    id="treatmentPlan"
-                    rows={4}
-                    placeholder="Describe the proposed treatment and expected outcomes..."
-                    value={treatmentPlan}
-                    onChange={(e) => setTreatmentPlan(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    required
-                  />
-                </div>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="clinicalNotes" className="text-sm font-medium">
+                  Clinical Notes <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="clinicalNotes"
+                  rows={4}
+                  value={clinicalNotes}
+                  onChange={(e) => setClinicalNotes(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Describe the patient's condition and symptoms..."
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="medicalHistory" className="text-sm font-medium">
+                  Relevant Medical History
+                </label>
+                <textarea
+                  id="medicalHistory"
+                  rows={3}
+                  value={medicalHistory}
+                  onChange={(e) => setMedicalHistory(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Previous treatments, chronic conditions, allergies..."
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="treatmentPlan" className="text-sm font-medium">
+                  Treatment Plan <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="treatmentPlan"
+                  rows={4}
+                  value={treatmentPlan}
+                  onChange={(e) => setTreatmentPlan(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Describe the proposed treatment and expected outcomes..."
+                  required
+                />
               </div>
             </CardContent>
           </Card>
 
-          {/* Supporting Documents */}
           <Card>
             <CardHeader>
               <CardTitle>Supporting Documents</CardTitle>
               <CardDescription>
-                Upload clinical notes, test results, or specialist referrals
+                Keep documents here for now; upload wiring can be added next once the request flow is stable
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="fileUpload"
-                    className="flex items-center justify-center w-full h-32 px-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary hover:bg-gray-50"
-                  >
-                    <div className="text-center">
-                      <svg
-                        className="w-8 h-8 mx-auto text-gray-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                        />
-                      </svg>
-                      <p className="mt-2 text-sm text-gray-600">
-                        Click to upload or drag and drop
-                      </p>
-                      <p className="text-xs text-gray-500">PDF, JPG, PNG up to 10MB</p>
-                    </div>
-                    <input
-                      id="fileUpload"
-                      type="file"
-                      className="hidden"
-                      multiple
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={handleFileUpload}
-                    />
-                  </label>
+            <CardContent className="space-y-4">
+              <label
+                htmlFor="fileUpload"
+                className="flex items-center justify-center w-full h-32 px-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary hover:bg-gray-50"
+              >
+                <div className="text-center">
+                  <p className="mt-2 text-sm text-gray-600">Click to attach local files</p>
+                  <p className="text-xs text-gray-500">These are not uploaded yet in the live submit flow</p>
                 </div>
+                <input
+                  id="fileUpload"
+                  type="file"
+                  className="hidden"
+                  multiple
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={handleFileUpload}
+                />
+              </label>
 
-                {/* Uploaded Files */}
-                {documents.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Uploaded Documents ({documents.length})</p>
-                    {documents.map((file, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-3 border rounded-lg"
-                      >
-                        <div className="flex items-center gap-3">
-                          <svg
-                            className="w-5 h-5 text-gray-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                            />
-                          </svg>
-                          <div>
-                            <p className="text-sm font-medium">{file.name}</p>
-                            <p className="text-xs text-gray-500">
-                              {(file.size / 1024).toFixed(1)} KB
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeDocument(index)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          Remove
-                        </Button>
+              {documents.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Attached Files ({documents.length})</p>
+                  {documents.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <p className="text-sm font-medium">{file.name}</p>
+                        <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                      <Button type="button" variant="outline" size="sm" onClick={() => removeDocument(index)}>
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Submit Button */}
           <div className="flex gap-3">
-            <Button type="submit" disabled={isSubmitting} className="min-w-[200px]">
+            <Button type="submit" disabled={isSubmitting} className="min-w-[220px]">
               {isSubmitting ? 'Submitting...' : 'Submit Pre-Authorization Request'}
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.push('/provider/dashboard')}
-            >
-              Cancel
+            <Button type="button" variant="outline" onClick={() => router.push('/provider/preauth')}>
+              Back to Requests
             </Button>
           </div>
         </form>
-
-        {/* Information Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Pre-Authorization Guidelines</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 text-sm text-gray-600">
-              <div>
-                <p className="font-medium text-gray-900">When is Pre-Authorization Required?</p>
-                <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
-                  <li>All surgical procedures</li>
-                  <li>Hospital admissions (planned)</li>
-                  <li>Specialist consultations (certain plans)</li>
-                  <li>Advanced diagnostic imaging (MRI, CT, PET scans)</li>
-                  <li>Oncology treatments</li>
-                  <li>Chronic medication (high-cost)</li>
-                </ul>
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">Response Times:</p>
-                <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
-                  <li>Routine requests: 48-72 hours</li>
-                  <li>Urgent requests: 24 hours</li>
-                  <li>Emergency requests: 4-6 hours</li>
-                </ul>
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">Required Documentation:</p>
-                <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
-                  <li>Detailed clinical notes</li>
-                  <li>Relevant test results or imaging</li>
-                  <li>Specialist referral letter (if applicable)</li>
-                  <li>Treatment plan and cost estimate</li>
-                </ul>
-              </div>
-              <p className="text-xs text-gray-500 mt-4">
-                Incomplete requests may be returned for additional information, delaying approval.
-                Ensure all required fields and documents are provided.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </SidebarLayout>
   );

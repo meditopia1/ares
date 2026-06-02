@@ -1,29 +1,41 @@
-import { createServerSupabaseClient } from '@/lib/supabase-server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { requireAnyRole } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
+);
+
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = createServerSupabaseClient();
+    await requireAnyRole(request, ['operations_manager', 'system_admin', 'admin', 'finance_manager']);
     const { data, error } = await supabase
       .from('members')
-      .select('id, member_number, first_name, last_name, id_number, date_of_birth, monthly_premium, employee_number, payment_group_id, collection_method, phone, email')
+      .select('id, member_number, first_name, last_name, id_number, date_of_birth, monthly_premium, payment_group_id, collection_method, phone, email')
       .eq('payment_group_id', params.id)
       .order('member_number');
 
     if (error) throw error;
 
-    return NextResponse.json(data);
+    return NextResponse.json(data || []);
   } catch (error) {
     console.error('Error fetching group members:', error);
     return NextResponse.json({ error: 'Failed to fetch group members' }, { status: 500 });
   }
 }
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = createServerSupabaseClient();
+    await requireAnyRole(request, ['operations_manager', 'system_admin', 'admin']);
     const body = await request.json();
     const { member_id } = body;
 

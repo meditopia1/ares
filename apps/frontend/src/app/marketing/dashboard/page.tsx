@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
+import { InlinePageLoading } from '@/components/layout/page-loading';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { authFetch } from '@/lib/auth-fetch';
 import { 
   Users, 
   Megaphone, 
@@ -34,11 +36,17 @@ export default function MarketingDashboardPage() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/marketing/dashboard');
+      const response = await authFetch('/api/marketing/dashboard');
       const data = await response.json();
-      setStats(data.stats);
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Failed to load dashboard data');
+      }
+
+      setStats(data.stats || null);
     } catch (error) {
       console.error('Failed to fetch dashboard stats:', error);
+      setStats(null);
     } finally {
       setLoading(false);
     }
@@ -47,12 +55,11 @@ export default function MarketingDashboardPage() {
   if (loading) {
     return (
       <SidebarLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading dashboard...</p>
-          </div>
-        </div>
+        <InlinePageLoading
+          title="Marketing Dashboard"
+          description="Preparing your marketing overview"
+          message="Loading campaigns, leads, and channel metrics..."
+        />
       </SidebarLayout>
     );
   }

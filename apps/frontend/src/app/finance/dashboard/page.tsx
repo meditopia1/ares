@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
+import { InlinePageLoading } from '@/components/layout/page-loading';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, TrendingUp, CreditCard, FileText } from 'lucide-react';
 
@@ -20,12 +21,11 @@ export default function FinanceDashboardPage() {
   if (loading) {
     return (
       <SidebarLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading dashboard...</p>
-          </div>
-        </div>
+        <InlinePageLoading
+          title="Finance Dashboard"
+          description="Preparing your financial overview"
+          message="Loading finance workspace..."
+        />
       </SidebarLayout>
     );
   }

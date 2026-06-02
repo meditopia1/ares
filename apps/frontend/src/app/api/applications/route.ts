@@ -8,6 +8,8 @@ export async function POST(request: NextRequest) {
     const supabaseAdmin = createServerSupabaseClient()
     const data = await request.json()
     
+    console.log('📝 Application submission started for:', data.email)
+    
     // Generate application number
     const appNumber = `APP-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
     
@@ -41,44 +43,90 @@ export async function POST(request: NextRequest) {
       data.debitOrderDay = parseInt(data.debitOrderDay)
     }
     
-    // Step 1: Create or update contact record
-    const { data: existingContact } = await supabaseAdmin
+    // Find contact_id (created in Step 1)
+    console.log('🔍 Looking up contact by email:', data.email)
+    const { data: contact, error: contactError } = await supabaseAdmin
       .from('contacts')
       .select('id')
       .eq('email', data.email)
+      .maybeSingle()
+
+    if (contactError) {
+      console.error('❌ Contact lookup error:', contactError)
+      throw contactError
+    }
+
+    const contactId = contact?.id || null
+    console.log('✅ Contact found:', contactId)
+
+    // Create application record
+    console.log('📄 Creating application record...')
+    const applicationData = {
+      contact_id: contactId,
+      application_number: appNumber,
+      first_name: data.firstName,
+      last_name: data.lastName,
+      id_number: data.idNumber,
+      date_of_birth: data.dateOfBirth,
+      gender: data.gender,
+      email: data.email,
+      mobile: data.mobile,
+      address_line1: data.addressLine1,
+      address_line2: data.addressLine2,
+      city: data.city,
+      postal_code: data.postalCode,
+      id_document_url: data.idDocumentUrl,
+      proof_of_address_url: proofOfAddressUrl,
+      selfie_url: data.selfieUrl,
+      bank_name: data.bankName,
+      account_number: data.accountNumber,
+      branch_code: data.branchCode,
+      account_holder_name: data.accountHolderName,
+      debit_order_day: data.debitOrderDay,
+      collection_method: data.collection_method || 'individual_debit_order',
+      medical_history: data.medicalHistory,
+      voice_recording_url: data.voiceRecordingUrl,
+      signature_url: data.signatureUrl,
+      terms_accepted_at: new Date().toISOString(),
+      terms_ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+      terms_user_agent: request.headers.get('user-agent') || 'unknown',
+      marketing_consent: data.marketingConsent || false,
+      marketing_consent_date: data.marketingConsentDate,
+      email_consent: data.emailConsent || false,
+      sms_consent: data.smsConsent || false,
+      phone_consent: data.phoneConsent || false,
+      plan_name: data.planName,
+      plan_config: data.planConfig,
+      monthly_price: data.monthlyPrice,
+      broker_id: brokerId,
+      status: 'submitted',
+      submitted_at: new Date().toISOString(),
+    }
+    
+    console.log('📋 Application data prepared:', {
+      appNumber,
+      contactId,
+      email: data.email,
+      planName: data.planName,
+    })
+    
+    const { data: application, error: appError } = await supabaseAdmin
+      .from('applications')
+      .insert(applicationData)
+      .select()
       .single()
 
-    let contactId: string
+    if (appError) {
+      console.error('❌ Application insert error:', appError)
+      throw appError
+    }
+    
+    console.log('✅ Application created:', application.id)
 
-    if (existingContact) {
-      // Update existing contact
-      const { data: updatedContact, error: updateError } = await supabaseAdmin
+    if (contactId) {
+      const { error: contactUpdateError } = await supabaseAdmin
         .from('contacts')
         .update({
-          first_name: data.firstName,
-          last_name: data.lastName,
-          mobile: data.mobile,
-          id_number: data.idNumber,
-          is_applicant: true,
-          application_submitted_at: new Date().toISOString(),
-          marketing_consent: data.marketingConsent || false,
-          marketing_consent_date: data.marketingConsentDate,
-          email_consent: data.emailConsent || false,
-          sms_consent: data.smsConsent || false,
-          phone_consent: data.phoneConsent || false,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', existingContact.id)
-        .select()
-        .single()
-
-      if (updateError) throw updateError
-      contactId = updatedContact.id
-    } else {
-      // Create new contact
-      const { data: newContact, error: createError } = await supabaseAdmin
-        .from('contacts')
-        .insert({
           first_name: data.firstName,
           last_name: data.lastName,
           email: data.email,
@@ -86,68 +134,19 @@ export async function POST(request: NextRequest) {
           id_number: data.idNumber,
           is_lead: true,
           is_applicant: true,
-          source: 'website_application',
-          application_submitted_at: new Date().toISOString(),
           marketing_consent: data.marketingConsent || false,
           marketing_consent_date: data.marketingConsentDate,
           email_consent: data.emailConsent || false,
           sms_consent: data.smsConsent || false,
           phone_consent: data.phoneConsent || false,
+          updated_at: new Date().toISOString(),
         })
-        .select()
-        .single()
+        .eq('id', contactId)
 
-      if (createError) throw createError
-      contactId = newContact.id
+      if (contactUpdateError) {
+        console.error('⚠️ Failed to sync contact consent/state:', contactUpdateError)
+      }
     }
-
-    // Step 2: Create application record
-    const { data: application, error: appError } = await supabaseAdmin
-      .from('applications')
-      .insert({
-        contact_id: contactId,
-        application_number: appNumber,
-        first_name: data.firstName,
-        last_name: data.lastName,
-        id_number: data.idNumber,
-        date_of_birth: data.dateOfBirth,
-        gender: data.gender,
-        email: data.email,
-        mobile: data.mobile,
-        address_line1: data.addressLine1,
-        address_line2: data.addressLine2,
-        city: data.city,
-        postal_code: data.postalCode,
-        id_document_url: data.idDocumentUrl,
-        proof_of_address_url: proofOfAddressUrl,
-        selfie_url: data.selfieUrl,
-        bank_name: data.bankName,
-        account_number: data.accountNumber,
-        branch_code: data.branchCode,
-        account_holder_name: data.accountHolderName,
-        debit_order_day: data.debitOrderDay,
-        medical_history: data.medicalHistory,
-        voice_recording_url: data.voiceRecordingUrl,
-        signature_url: data.signatureUrl,
-        terms_accepted_at: new Date().toISOString(),
-        terms_ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
-        terms_user_agent: request.headers.get('user-agent') || 'unknown',
-        marketing_consent: data.marketingConsent || false,
-        marketing_consent_date: data.marketingConsentDate,
-        email_consent: data.emailConsent || false,
-        sms_consent: data.smsConsent || false,
-        phone_consent: data.phoneConsent || false,
-        plan_name: data.planName,
-        plan_config: data.planConfig,
-        monthly_price: data.monthlyPrice,
-        broker_id: brokerId, // Assign broker if found
-        status: 'submitted',
-        submitted_at: new Date().toISOString(),
-      })
-      .select()
-      .single()
-
-    if (appError) throw appError
 
     // Step 3: Insert dependants if any
     if (data.dependents && data.dependents.length > 0) {
@@ -171,7 +170,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 4: Log contact interaction
-    await supabaseAdmin
+    const { error: interactionError } = await supabaseAdmin
       .from('contact_interactions')
       .insert({
         contact_id: contactId,
@@ -186,6 +185,12 @@ export async function POST(request: NextRequest) {
         },
       })
 
+    if (interactionError) {
+      console.error('⚠️ Failed to log interaction (non-critical):', interactionError)
+      // Don't throw - this is non-critical
+    }
+
+    console.log('✅ Application submission complete:', appNumber)
     return NextResponse.json({
       success: true,
       applicationNumber: appNumber,

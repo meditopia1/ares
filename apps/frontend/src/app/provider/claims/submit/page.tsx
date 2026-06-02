@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
+import { InlinePageLoading } from '@/components/layout/page-loading';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,9 @@ import { getAllClaimTypes, getClaimFormConfig, type ClaimFormConfig, type ClaimF
 import { uploadClaimDocuments, generateTempClaimNumber } from '@/lib/storage';
 import { useBenefitValidation } from '@/hooks/useBenefitValidation';
 import { BenefitValidationDisplay } from '@/components/claims/benefit-validation-display';
+import { authFetch } from '@/lib/auth-fetch';
+
+type ClaimLookupMode = 'member_number' | 'patient_name' | 'id_number';
 
 export default function ClaimSubmissionPage() {
   const router = useRouter();
@@ -23,6 +27,14 @@ export default function ClaimSubmissionPage() {
   // Benefit validation
   const { validateBenefit, validating, validationResult, clearValidation } = useBenefitValidation();
   const [showValidation, setShowValidation] = useState(false);
+
+  // Member lookup
+  const [lookupMode, setLookupMode] = useState<ClaimLookupMode>('member_number');
+  const [lookupValue, setLookupValue] = useState('');
+  const [lookupMessage, setLookupMessage] = useState('');
+  const [lookupStatus, setLookupStatus] = useState('');
+  const [selectedMemberId, setSelectedMemberId] = useState('');
+  const [isLookingUp, setIsLookingUp] = useState(false);
 
   // Claim type selection
   const [selectedBenefitType, setSelectedBenefitType] = useState('doctor_visits');
@@ -65,6 +77,81 @@ export default function ClaimSubmissionPage() {
     }
   };
 
+  const clearMemberLookup = () => {
+    setLookupValue('');
+    setLookupMessage('');
+    setLookupStatus('');
+    setSelectedMemberId('');
+    setMemberNumber('');
+    setPatientName('');
+    setIdNumber('');
+  };
+
+  const handleMemberLookup = async () => {
+    const query = lookupValue.trim();
+
+    if (!query) {
+      alert(`Please enter a ${lookupMode.replace('_', ' ')}`);
+      return;
+    }
+
+    setIsLookingUp(true);
+    setLookupMessage('');
+    setLookupStatus('');
+
+    try {
+      const payload =
+        lookupMode === 'member_number'
+          ? { member_number: query }
+          : lookupMode === 'patient_name'
+            ? { patient_name: query }
+            : { id_number: query };
+
+      const response = await authFetch('/api/provider/eligibility', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.error || 'Failed to look up member');
+        return;
+      }
+
+      const member = data.member;
+      if (!member) {
+        alert(data.message || 'Member not found');
+        return;
+      }
+
+      const fullName = [member.first_name, member.last_name].filter(Boolean).join(' ').trim();
+
+      setSelectedMemberId(member.id || '');
+      setMemberNumber(member.member_number || '');
+      setPatientName(fullName || query);
+      setIdNumber(member.id_number || '');
+      setLookupStatus(member.status || (data.eligible ? 'active' : 'suspended'));
+      setLookupMessage(
+        data.eligible
+          ? 'Member is active and eligible'
+          : data.message || `Member status is ${member.status || 'unknown'}`
+      );
+    } catch (error) {
+      console.error('Member lookup error:', error);
+      alert('Failed to look up member. Please try again.');
+    } finally {
+      setIsLookingUp(false);
+    }
+  };
+
+  const getTodayLocalDate = () => {
+    const now = new Date();
+    const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+    return local.toISOString().split('T')[0];
+  };
+
   // Validate benefit eligibility
   const handleValidateBenefit = async () => {
     if (!memberNumber) {
@@ -91,9 +178,13 @@ export default function ClaimSubmissionPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
+      <SidebarLayout>
+        <InlinePageLoading
+          title="Submit Claim"
+          description="Submit a new claim for services rendered to a patient"
+          message="Opening claim submission..."
+        />
+      </SidebarLayout>
     );
   }
 
@@ -152,15 +243,37 @@ export default function ClaimSubmissionPage() {
         );
       
       case 'date':
-        return (
+        const dateInput = (
           <Input
             id={field.name}
             type="date"
             value={value}
             onChange={(e) => updateFormField(field.name, e.target.value)}
             required={field.required}
-            max={new Date().toISOString().split('T')[0]}
+            max={getTodayLocalDate()}
+            className="w-[220px]"
           />
+        );
+
+        if (field.name === 'serviceDate') {
+          return (
+            <div className="inline-flex items-center gap-2">
+              <div>{dateInput}</div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0 border-blue-200 bg-blue-50 px-3 text-blue-700 hover:bg-blue-100 hover:text-blue-800"
+                onClick={() => updateFormField(field.name, getTodayLocalDate())}
+              >
+                Today
+              </Button>
+            </div>
+          );
+        }
+
+        return (
+          dateInput
         );
       
       default:
@@ -195,6 +308,16 @@ export default function ClaimSubmissionPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!selectedMemberId) {
+      alert('Please look up and select a member before submitting the claim.');
+      return;
+    }
+
+    if (lookupStatus && lookupStatus !== 'active') {
+      alert(`This member is ${lookupStatus}. Claims cannot be submitted until the status is active.`);
+      return;
+    }
 
     // Check if benefit validation has been performed
     if (!showValidation || !validationResult) {
@@ -248,11 +371,12 @@ export default function ClaimSubmissionPage() {
 
       setUploadProgress('Submitting claim...');
 
-      const response = await fetch('/api/provider/claims/submit', {
+      const response = await authFetch('/api/provider/claims/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          providerId: user.id,
+          member_id: selectedMemberId,
+          provider_id: user.id,
           memberNumber,
           patientName,
           idNumber,
@@ -332,6 +456,88 @@ export default function ClaimSubmissionPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Member Lookup */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Member Lookup</CardTitle>
+              <CardDescription>
+                Search by member number, patient name, or ID number. The lookup will fill the other fields and show active or suspended status.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div className="space-y-2">
+                  <label htmlFor="lookupMode" className="text-sm font-medium">
+                    Search Type
+                  </label>
+                  <select
+                    id="lookupMode"
+                    value={lookupMode}
+                    onChange={(e) => setLookupMode(e.target.value as ClaimLookupMode)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="member_number">Member Number</option>
+                    <option value="patient_name">Patient Name</option>
+                    <option value="id_number">ID Number</option>
+                  </select>
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <label htmlFor="lookupValue" className="text-sm font-medium">
+                    Search Value
+                  </label>
+                  <Input
+                    id="lookupValue"
+                    placeholder={
+                      lookupMode === 'member_number'
+                        ? 'DAY1XXXXXXX'
+                        : lookupMode === 'patient_name'
+                          ? 'John Smith'
+                          : '8001015800083'
+                    }
+                    value={lookupValue}
+                    onChange={(e) => setLookupValue(e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    onClick={handleMemberLookup}
+                    disabled={isLookingUp}
+                    className="bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
+                  >
+                    {isLookingUp ? 'Checking...' : 'Check'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={clearMemberLookup}
+                    disabled={isLookingUp}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </div>
+
+              {(lookupMessage || lookupStatus) && (
+                <div className="mt-4 p-4 border rounded-lg bg-gray-50 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-medium text-gray-900">Lookup Result</p>
+                    <p className="text-sm text-gray-600">{lookupMessage}</p>
+                  </div>
+                  {lookupStatus && (
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                      lookupStatus === 'active'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {lookupStatus}
+                    </span>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Patient Information */}
           <Card>
             <CardHeader>
@@ -349,31 +555,28 @@ export default function ClaimSubmissionPage() {
                     placeholder="DAY1XXXXXXX"
                     value={memberNumber}
                     onChange={(e) => setMemberNumber(e.target.value)}
-                    required
                   />
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="patientName" className="text-sm font-medium">
-                    Patient Name <span className="text-red-500">*</span>
+                    Patient Name
                   </label>
                   <Input
                     id="patientName"
                     placeholder="John Smith"
                     value={patientName}
                     onChange={(e) => setPatientName(e.target.value)}
-                    required
                   />
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="idNumber" className="text-sm font-medium">
-                    ID Number <span className="text-red-500">*</span>
+                    ID Number
                   </label>
                   <Input
                     id="idNumber"
                     placeholder="8001015800083"
                     value={idNumber}
                     onChange={(e) => setIdNumber(e.target.value)}
-                    required
                   />
                 </div>
               </div>

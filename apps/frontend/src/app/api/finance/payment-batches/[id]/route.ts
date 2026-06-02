@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { generateEFTFile, generatePaymentReference, validatePaymentBatch } from '@/lib/payment-processing';
+import { createAuthenticatedSupabaseClient, requireAnyRole } from '@/lib/auth-server';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -11,7 +12,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    await requireAnyRole(request, ['finance_manager', 'admin', 'system_admin']);
+
+    const supabase = createAuthenticatedSupabaseClient(request);
     const batchId = params.id;
 
     // Fetch batch with payments
@@ -55,13 +58,14 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    const user = await requireAnyRole(request, ['finance_manager', 'admin', 'system_admin']);
+    
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const body = await request.json();
     const batchId = params.id;
 
     const {
-      action, // 'approve', 'process', 'complete', 'cancel'
-      user_id // TODO: Get from auth session
+      action // 'approve', 'process', 'complete', 'cancel'
     } = body;
 
     // Fetch current batch
@@ -110,7 +114,7 @@ export async function PATCH(
       updateData = {
         ...updateData,
         status: 'approved',
-        approved_by: user_id,
+        approved_by: user.id,
         approved_at: now
       };
 
@@ -154,7 +158,7 @@ export async function PATCH(
         eft_file_generated: true,
         eft_file_url: urlData.publicUrl,
         eft_file_generated_at: now,
-        processed_by: user_id,
+        processed_by: user.id,
         processed_at: now
       };
 
@@ -267,63 +271,16 @@ export async function PATCH(
   }
 }
 
-// DELETE - Delete draft batch
+// DELETE - Disabled for security
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const batchId = params.id;
-
-    // Check batch status
-    const { data: batch, error: batchError } = await supabase
-      .from('payment_batches')
-      .select('status')
-      .eq('id', batchId)
-      .single();
-
-    if (batchError || !batch) {
-      return NextResponse.json(
-        { error: 'Batch not found' },
-        { status: 404 }
-      );
-    }
-
-    if (batch.status !== 'draft') {
-      return NextResponse.json(
-        { error: 'Can only delete draft batches' },
-        { status: 400 }
-      );
-    }
-
-    // Delete payments first
-    await supabase
-      .from('claim_payments')
-      .delete()
-      .eq('payment_batch_id', batchId);
-
-    // Delete batch
-    const { error: deleteError } = await supabase
-      .from('payment_batches')
-      .delete()
-      .eq('id', batchId);
-
-    if (deleteError) {
-      console.error('Error deleting batch:', deleteError);
-      throw deleteError;
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: 'Batch deleted successfully'
-    });
-
-  } catch (error) {
-    console.error('Error deleting batch:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete batch' },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(
+    { 
+      error: 'Payment batch deletion is disabled. Use cancel/void workflow instead.',
+      code: 'DELETE_DISABLED'
+    },
+    { status: 403 }
+  );
 }

@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
         const { count } = await supabase
           .from('members')
           .select('*', { count: 'exact', head: true })
-          .eq('broker_id', broker.id)
+          .or(`broker_code.eq.${broker.code},member_number.ilike.${broker.code}%`)
           .eq('status', 'active')
 
         return {

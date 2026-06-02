@@ -1,0 +1,192 @@
+Subject: Day1Health - API Integration Request
+
+---
+
+Dear Qsure API Support Team,
+
+I am writing to request API access for Day1Health to integrate with Qsure's Collections and Disbursements APIs.
+
+COMPANY INFORMATION
+-------------------
+Company Name: Day1Health
+Contact Person: [Your Full Name]
+Job Title: [Your Job Title]
+Email: [Your Email Address]
+Phone: [Your Phone Number]
+Mobile: [Your Mobile Number]
+
+INTEGRATION OVERVIEW
+--------------------
+Day1Health is a medical insurance operating system managing approximately 4,700 members. We are currently using Qsure for manual collections and would like to automate our payment processing through API integration.
+
+Integration Requirements:
+1. Collections API - For collecting debit orders from members
+2. Disbursements API - For paying healthcare providers and member refunds
+
+CURRENT QSURE USAGE
+-------------------
+We are an existing Qsure client currently processing manual collections through your portal. We now need to automate this process via API integration.
+
+Client Number: [Your Qsure client number if known, or "To be confirmed"]
+
+INTEGRATION SCOPE
+-----------------
+INCOMING Collections (FROM Members):
+- Individual debit orders: ~4,200 members
+- Group debit orders: 45 payment groups (~500 members)
+- Monthly collection volume: ~R3.5 million
+- Collection frequency: Monthly (various debit order days)
+
+OUTGOING Disbursements (TO Providers/Members):
+- Provider payments: ~500 transactions per month (~R1.75M)
+- Member refunds: ~200 transactions per month (~R250K)
+- Payment frequency: Weekly batches
+
+TECHNICAL ENVIRONMENT
+---------------------
+Hosting Platform: Vercel
+Framework: Next.js 14 (App Router)
+Language: TypeScript 5.3.3
+Database: Supabase (PostgreSQL)
+Runtime: Node.js 18+
+API Integration: REST API (preferred)
+
+REQUIRED DOCUMENTATION & ACCESS
+--------------------------------
+We kindly request the following:
+
+1. API Documentation
+   - Collections API endpoints and specifications
+   - Disbursements API endpoints and specifications
+   - Authentication method and credentials
+   - Webhook specifications
+   - Error codes and handling
+   - Rate limits and best practices
+
+2. UAT Environment Access
+   - UAT API credentials
+   - UAT environment URL
+   - Test data for integration testing
+   - Testing guidelines
+
+3. Production Environment Access
+   - Production API credentials (after successful UAT)
+   - Production environment URL
+   - Go-live checklist
+
+WEBHOOK ENDPOINTS
+-----------------
+We will provide the following webhook endpoints for real-time status updates:
+
+Payment Status Updates: https://[our-domain]/api/qsure/webhook/payment-status
+Disbursement Status Updates: https://[our-domain]/api/qsure/webhook/disbursement-status
+
+(Note: Final domain will be confirmed once we receive API documentation)
+
+INTEGRATION TIMELINE
+--------------------
+Phase 1: API Access Setup (2 weeks)
+- Review API documentation
+- Set up development environment
+- Configure UAT credentials
+
+Phase 2: UAT Implementation (3 weeks)
+- Implement collections API
+- Implement disbursements API
+- Implement webhooks
+
+Phase 3: UAT Testing (2 weeks)
+- Test all payment scenarios
+- Verify reconciliation
+- Test failure handling
+
+Phase 4: Production Deployment (2 weeks)
+- Soft launch with small batch
+- Gradual rollout to all members
+- Monitor and optimize
+
+Target Go-Live Date: June 2026
+
+COMPLIANCE & SECURITY
+---------------------
+Our integration will comply with:
+- POPIA (South African data protection)
+- PCI DSS (payment card industry standards)
+- Data encryption (HTTPS, encrypted storage)
+- Audit trail for all transactions
+
+QUESTIONS FOR QSURE
+-------------------
+We would appreciate clarification on the following:
+
+1. What is the API authentication method? (API Key, OAuth 2.0, JWT, etc.)
+2. What is the webhook signature verification algorithm?
+3. What are the API rate limits? (requests per minute/hour)
+4. What is the payment processing timeline? (same day, next day, T+2)
+5. What is the reconciliation file format and frequency?
+6. What is the support SLA for API-related issues?
+7. Are there any setup fees or transaction fees for API usage?
+8. What is the UAT environment URL and access process?
+9. What is the typical timeline for API access approval?
+10. Are there any specific IP addresses we need to whitelist?
+
+SPECIAL REQUIREMENTS
+--------------------
+1. We need to exclude certain members from Qsure collections (Plus1Rewards members with broker code 'POR')
+2. We need to exclude manual EFT payments from Qsure collections
+3. We require support for group debit orders with flexible strike dates per group
+4. We need real-time payment status updates via webhooks
+5. We require batch payment processing for provider disbursements
+
+NEXT STEPS
+----------
+Please advise on:
+1. Any additional information required from our side
+2. The approval process and timeline
+3. The onboarding process for API access
+4. Any forms or agreements that need to be completed
+5. The best contact person for technical questions during integration
+
+We are eager to begin this integration and automate our payment processing. Please let us know if you need any additional information or documentation from our side.
+
+Thank you for your assistance. We look forward to working with you.
+
+Best regards,
+
+[Your Full Name]
+[Your Job Title]
+Day1Health
+Email: [Your Email Address]
+Phone: [Your Phone Number]
+Mobile: [Your Mobile Number]
+
+---
+
+ATTACHMENTS (if applicable):
+- Qsure Integration Access Request Form (completed)
+- Company registration documents
+- Technical architecture diagram
+- Any other required documentation
+
+---
+
+CC: [Your internal stakeholders - CTO, Finance Director, etc.]
+
+---
+
+FOLLOW-UP PLAN:
+- If no response within 5 business days, follow up via phone
+- If no response within 10 business days, escalate to Qsure account manager
+- Document all communication for audit trail
+
+---
+
+INTERNAL NOTES (DO NOT INCLUDE IN EMAIL):
+- Save confirmation email from Qsure
+- Create calendar reminder to follow up
+- Prepare development environment while waiting
+- Review existing payment infrastructure
+- Create API client library skeleton
+- Set up environment variables structure
+- Create webhook endpoint skeletons
+- Document API integration plan

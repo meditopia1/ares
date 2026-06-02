@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 export default function BrokerApplicationsPage() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
 
   const applications = [
@@ -102,7 +104,9 @@ export default function BrokerApplicationsPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Applications</CardTitle>
-              <Button size="sm">New Application</Button>
+              <Button size="sm" onClick={() => router.push('/apply?source=broker')}>
+                New Application
+              </Button>
             </div>
           </CardHeader>
           <CardContent>

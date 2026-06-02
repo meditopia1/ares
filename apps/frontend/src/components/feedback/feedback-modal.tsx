@@ -104,7 +104,7 @@ export function FeedbackModal({ isOpen, onClose, pageName, userRole }: FeedbackM
               >
                 <option value="bug">🐛 Bug / Error</option>
                 <option value="feature">✨ Feature Request</option>
-                <option value="layout">🎨 UI / Layout Change</option>
+                <option value="theme">🎨 UI / Theme Styling</option>
                 <option value="filter">🔍 Filter Request</option>
                 <option value="rule">📋 Rule / Business Logic</option>
                 <option value="other">💡 Other</option>

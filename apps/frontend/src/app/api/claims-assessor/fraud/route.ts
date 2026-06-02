@@ -1,54 +1,82 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+);
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Get all claims with fraud alerts
-    const { data: claims, error: claimsError } = await supabase
+    // Fetch claims with fraud alerts
+    const { data: claims, error } = await supabaseAdmin
       .from('claims')
-      .select('*')
+      .select(`
+        *,
+        members:member_id (
+          id,
+          member_number,
+          first_name,
+          last_name,
+          email,
+          mobile,
+          plan_name
+        ),
+        providers:provider_id (
+          id,
+          provider_number,
+          name,
+          practice_name,
+          type,
+          fraud_risk_score
+        )
+      `)
       .eq('fraud_alert_triggered', true)
       .order('submission_date', { ascending: false });
 
-    if (claimsError) {
-      console.error('Supabase error:', claimsError);
-      throw claimsError;
+    if (error) {
+      console.error('Error fetching fraud cases:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch fraud cases', details: error.message },
+        { status: 500 }
+      );
     }
 
-    // Fetch related providers and members
-    const providerIds = [...new Set(claims?.map(c => c.provider_id).filter(Boolean))];
-    const memberIds = [...new Set(claims?.map(c => c.member_id).filter(Boolean))];
+    // Also fetch provider fraud alerts
+    const { data: providerAlerts, error: alertsError } = await supabaseAdmin
+      .from('provider_fraud_alerts')
+      .select(`
+        *,
+        providers:provider_id (
+          id,
+          provider_number,
+          name,
+          practice_name,
+          type
+        )
+      `)
+      .eq('status', 'open')
+      .order('created_at', { ascending: false });
 
-    const [providersResult, membersResult] = await Promise.all([
-      providerIds.length > 0 
-        ? supabase.from('providers').select('id, name, provider_number, type').in('id', providerIds)
-        : Promise.resolve({ data: [] }),
-      memberIds.length > 0
-        ? supabase.from('members').select('id, first_name, last_name, member_number').in('id', memberIds)
-        : Promise.resolve({ data: [] })
-    ]);
+    if (alertsError) {
+      console.error('Error fetching provider alerts:', alertsError);
+    }
 
-    // Create lookup maps
-    const providersMap = new Map(providersResult.data?.map(p => [p.id, p]) || []);
-    const membersMap = new Map(membersResult.data?.map(m => [m.id, m]) || []);
+    return NextResponse.json({
+      cases: claims || [],
+      provider_alerts: providerAlerts || []
+    });
 
-    // Attach related data to claims
-    const enrichedCases = claims?.map(claim => ({
-      ...claim,
-      provider: claim.provider_id ? providersMap.get(claim.provider_id) : null,
-      member: claim.member_id ? membersMap.get(claim.member_id) : null
-    })) || [];
-
-    return NextResponse.json({ cases: enrichedCases });
-  } catch (error) {
-    console.error('Error fetching fraud cases:', error);
+  } catch (error: any) {
+    console.error('Error in fraud API:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch fraud cases', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }

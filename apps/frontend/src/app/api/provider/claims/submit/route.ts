@@ -1,161 +1,265 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { validateBenefitLimit, validateWaitingPeriod } from '@/lib/benefit-validation-server';
+import { validateWaitingPeriod } from '@/lib/benefit-validation-server';
+import { requireRole } from '@/lib/auth-server';
+import { sendNotification } from '@/lib/notifications';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+);
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Require provider authentication
+    const user = await requireRole(request, 'provider');
+    
     const body = await request.json();
 
-    const {
-      providerId,
-      memberNumber,
-      patientName,
-      idNumber,
-      benefitType,
-      claimType,
-      formData,
-      totalAmount,
-      documentUrls
-    } = body;
-
-    // Extract service date from formData (different field names for different claim types)
-    const serviceDate = formData.serviceDate || formData.admissionDate || new Date().toISOString().split('T')[0];
-
-    // Find member by member_number
-    const { data: member, error: memberError } = await supabase
-      .from('members')
-      .select('id, plan_id, status')
-      .eq('member_number', memberNumber)
-      .single();
-
-    if (memberError || !member) {
-      return NextResponse.json(
-        { error: 'Member not found. Please verify the member number.' },
-        { status: 404 }
-      );
+    // Validate required fields
+    const requiredFields = ['member_id', 'service_date', 'claimed_amount', 'claim_type', 'benefit_type'];
+    for (const field of requiredFields) {
+      if (!body[field]) {
+        return NextResponse.json(
+          { error: `Missing required field: ${field}` },
+          { status: 400 }
+        );
+      }
     }
 
-    // Check member status
-    if (member.status !== 'active') {
+    // Use provider_id from authenticated user if not provided
+    const providerId = body.provider_id || user.providerId;
+    
+    if (!providerId) {
       return NextResponse.json(
-        { error: `Member is not active. Current status: ${member.status}` },
+        { error: 'Provider ID not found' },
         { status: 400 }
       );
     }
 
-    // Validate benefit limits
-    const benefitValidation = await validateBenefitLimit(
-      supabase,
-      member.id,
-      benefitType,
-      totalAmount,
-      member.plan_id
-    );
+    // Verify member exists and is active
+    const { data: member, error: memberError } = await supabaseAdmin
+      .from('members')
+      .select('id, member_number, status, plan_name, plan_id')
+      .eq('id', body.member_id)
+      .single();
+
+    if (memberError || !member) {
+      return NextResponse.json(
+        { error: 'Member not found' },
+        { status: 404 }
+      );
+    }
+
+    if (member.status !== 'active') {
+      return NextResponse.json(
+        { error: 'Member is not active' },
+        { status: 400 }
+      );
+    }
+
+    // Generate claim number (format: CLM-YYYYMMDD-XXX)
+    const today = new Date();
+    const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
+    
+    // Get count of claims today to generate sequence number
+    const { data: todayClaims } = await supabaseAdmin
+      .from('claims')
+      .select('claim_number')
+      .like('claim_number', `CLM-${dateStr}-%`);
+    
+    const sequence = String((todayClaims?.length || 0) + 1).padStart(3, '0');
+    const claimNumber = `CLM-${dateStr}-${sequence}`;
 
     // Validate waiting period
     const waitingPeriodValidation = await validateWaitingPeriod(
-      supabase,
-      member.id,
-      benefitType,
+      supabaseAdmin,
+      body.member_id,
+      body.benefit_type,
       member.plan_id
     );
 
-    // Collect all warnings and errors
-    const allWarnings = [
-      ...benefitValidation.warnings,
-      ...waitingPeriodValidation.warnings
-    ];
-    const allErrors = [
-      ...benefitValidation.errors,
-      ...waitingPeriodValidation.errors
-    ];
-
-    // If there are errors, auto-reject or pend the claim
+    // Determine initial status based on waiting period
     let initialStatus = 'pending';
-    let rejectionReason = null;
-    let pendedReason = null;
-
-    if (allErrors.length > 0) {
-      // If waiting period not met or limit exceeded, pend for review
+    let pendedReason: string | null = null;
+    
+    if (!waitingPeriodValidation.valid) {
       initialStatus = 'pended';
-      pendedReason = allErrors.join('; ');
+      pendedReason = waitingPeriodValidation.errors.join('; ');
+      console.log(`⚠️ Claim auto-pended: Waiting period not met for member ${member.member_number}`);
+      console.log(`   Benefit: ${body.benefit_type}`);
+      console.log(`   Reason: ${pendedReason}`);
     }
 
-    // Generate claim number
-    const claimNumber = `CLM-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 10000).toString().padStart(3, '0')}`;
+    // Validate pre-authorization if required
+    if (body.pre_auth_required && body.pre_auth_number) {
+      const { data: preauth } = await supabaseAdmin
+        .from('pre_authorizations')
+        .select('*')
+        .eq('preauth_number', body.pre_auth_number)
+        .eq('member_id', body.member_id)
+        .eq('status', 'approved')
+        .single();
 
-    // Extract ICD-10 codes from formData
-    const icd10Codes = formData.diagnosisCode ? [formData.diagnosisCode] : [];
-    
-    // Extract tariff/procedure codes from formData
-    const tariffCodes = formData.procedureCode ? [formData.procedureCode] : [];
+      if (!preauth) {
+        initialStatus = 'pended';
+        pendedReason = pendedReason 
+          ? `${pendedReason}; Pre-authorization not found or not approved`
+          : 'Pre-authorization not found or not approved';
+        console.log(`⚠️ Claim auto-pended: Invalid pre-authorization ${body.pre_auth_number}`);
+      } else if (preauth.used) {
+        initialStatus = 'pended';
+        pendedReason = pendedReason 
+          ? `${pendedReason}; Pre-authorization already used`
+          : 'Pre-authorization already used';
+        console.log(`⚠️ Claim auto-pended: Pre-authorization ${body.pre_auth_number} already used`);
+      } else {
+        // Check if pre-auth is still valid
+        const today = new Date();
+        const validUntil = new Date(preauth.valid_until);
+        if (today > validUntil) {
+          initialStatus = 'pended';
+          pendedReason = pendedReason 
+            ? `${pendedReason}; Pre-authorization expired`
+            : 'Pre-authorization expired';
+          console.log(`⚠️ Claim auto-pended: Pre-authorization ${body.pre_auth_number} expired`);
+        }
+      }
+    } else if (body.pre_auth_required && !body.pre_auth_number) {
+      // Pre-auth required but not provided
+      initialStatus = 'pended';
+      pendedReason = pendedReason 
+        ? `${pendedReason}; Pre-authorization required but not provided`
+        : 'Pre-authorization required but not provided';
+      console.log(`⚠️ Claim auto-pended: Pre-authorization required but not provided`);
+    }
 
-    // Create claim with dynamic form data
-    const { data: claim, error: claimError } = await supabase
+    // Check for high-value claims (potential fraud alert)
+    const claimedAmount = parseFloat(body.claimed_amount);
+    const fraudAlertTriggered = claimedAmount > 50000;
+    const fraudRiskScore = fraudAlertTriggered ? 50 : 0;
+
+    // Create claim
+    const { data: claim, error } = await supabaseAdmin
       .from('claims')
       .insert({
         claim_number: claimNumber,
-        member_id: member.id,
-        provider_id: providerId,
-        service_date: serviceDate,
-        claim_type: claimType,
-        benefit_type: benefitType,
-        claimed_amount: totalAmount.toString(),
+        member_id: body.member_id,
+        provider_id: providerId, // Use authenticated provider ID
+        service_date: body.service_date,
+        claimed_amount: body.claimed_amount,
+        claim_type: body.claim_type,
+        benefit_type: body.benefit_type,
+        icd10_codes: body.icd10_codes || [],
+        tariff_codes: body.tariff_codes || [],
+        pre_auth_number: body.pre_auth_number,
+        pre_auth_required: body.pre_auth_required || false,
+        is_pmb: body.is_pmb || false,
+        claim_source: 'provider',
+        submission_method: 'portal',
+        document_urls: body.document_urls || [],
+        claim_data: body.claim_data || {},
         status: initialStatus,
-        submission_date: new Date().toISOString(),
-        icd10_codes: icd10Codes,
-        tariff_codes: tariffCodes,
-        pre_auth_required: false,
-        is_pmb: false,
-        fraud_alert_triggered: false,
-        claim_source: 'provider_portal',
-        claim_data: {
-          ...formData,
-          validation_warnings: allWarnings,
-          validation_errors: allErrors
-        },
-        document_urls: documentUrls,
         pended_reason: pendedReason,
-        pended_date: pendedReason ? new Date().toISOString() : null,
-        additional_info_requested: pendedReason ? 'Please review benefit limits and waiting periods' : null
+        pended_date: initialStatus === 'pended' ? new Date().toISOString() : null,
+        submission_date: new Date().toISOString(),
+        fraud_alert_triggered: fraudAlertTriggered,
+        fraud_risk_score: fraudRiskScore
       })
       .select()
       .single();
 
-    if (claimError) {
-      console.error('Error creating claim:', claimError);
-      throw claimError;
+    if (error) {
+      console.error('Error creating claim:', error);
+      return NextResponse.json(
+        { error: 'Failed to create claim', details: error.message },
+        { status: 500 }
+      );
     }
 
     // Create audit trail entry
-    await supabase.from('claim_audit_trail').insert({
-      claim_id: claim.id,
-      action: 'submitted',
-      performed_by: providerId,
-      previous_status: null,
-      new_status: initialStatus,
-      notes: `Claim submitted via provider portal${allWarnings.length > 0 ? '. Warnings: ' + allWarnings.join('; ') : ''}${allErrors.length > 0 ? '. Errors: ' + allErrors.join('; ') : ''}`
-    });
+    const auditNotes = initialStatus === 'pended' 
+      ? `Claim submitted and auto-pended: ${pendedReason}`
+      : 'Claim submitted by provider via portal';
+    
+    await supabaseAdmin
+      .from('claim_audit_trail')
+      .insert({
+        claim_id: claim.id,
+        action: 'submitted',
+        new_status: initialStatus,
+        notes: auditNotes
+      });
+
+    // If fraud alert triggered, create provider fraud alert
+    if (fraudAlertTriggered) {
+      await supabaseAdmin
+        .from('provider_fraud_alerts')
+        .insert({
+          provider_id: providerId, // Use authenticated provider ID
+          alert_type: 'high_value',
+          severity: 'medium',
+          description: `High-value claim submitted: R${claimedAmount.toLocaleString()}`,
+          related_claims: [claim.id],
+          status: 'open'
+        });
+    }
+
+    // Send notification to member
+    try {
+      const { data: memberDetails } = await supabaseAdmin
+        .from('members')
+        .select('first_name, last_name, email, mobile, email_consent, sms_consent')
+        .eq('id', body.member_id)
+        .single();
+
+      if (memberDetails) {
+        const recipient = {
+          email: memberDetails.email,
+          mobile: memberDetails.mobile,
+          firstName: memberDetails.first_name,
+          lastName: memberDetails.last_name
+        };
+
+        const preferences = {
+          emailConsent: memberDetails.email_consent !== false,
+          smsConsent: memberDetails.sms_consent !== false
+        };
+
+        await sendNotification(
+          'claim_submitted',
+          recipient,
+          {
+            claimNumber: claimNumber,
+            serviceDate: body.service_date,
+            claimedAmount: claimedAmount
+          },
+          preferences
+        );
+        console.log(`✅ Claim submission notification sent for ${claimNumber}`);
+      }
+    } catch (notificationError) {
+      // Log error but don't fail the request
+      console.error('❌ Error sending notification:', notificationError);
+    }
 
     return NextResponse.json({
       success: true,
-      claimNumber: claim.claim_number,
-      claimId: claim.id,
-      status: initialStatus,
-      warnings: allWarnings,
-      errors: allErrors,
-      message: initialStatus === 'pended' 
-        ? 'Claim submitted but requires review due to validation issues'
-        : 'Claim submitted successfully'
-    });
-  } catch (error) {
+      claim,
+      claim_number: claimNumber,
+      message: 'Claim submitted successfully'
+    }, { status: 201 });
+
+  } catch (error: any) {
     console.error('Error submitting claim:', error);
     return NextResponse.json(
-      { error: 'Failed to submit claim', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }

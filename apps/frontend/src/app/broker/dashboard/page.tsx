@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
+import { InlinePageLoading } from '@/components/layout/page-loading';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -65,9 +66,13 @@ export default function BrokerDashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
+      <SidebarLayout>
+        <InlinePageLoading
+          title="Broker Dashboard"
+          description="Preparing your sales pipeline"
+          message="Loading broker workspace..."
+        />
+      </SidebarLayout>
     );
   }
 
@@ -174,7 +179,17 @@ export default function BrokerDashboardPage() {
             <h1 className="text-3xl font-bold text-gray-900">Broker Dashboard</h1>
             <p className="text-gray-600 mt-1">Welcome back, {user.email}</p>
           </div>
-          <Button onClick={() => router.push('/broker/leads')}>+ Capture New Lead</Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => router.push('/broker/applications')}>
+              View Applications
+            </Button>
+            <Button onClick={() => router.push('/apply?source=broker')}>
+              + New Application
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/broker/leads')}>
+              + Capture New Lead
+            </Button>
+          </div>
         </div>
 
         {/* Pipeline Statistics */}
@@ -233,7 +248,7 @@ export default function BrokerDashboardPage() {
               </CardContent>
             </Card>
 
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => router.push('/broker/applications')}>
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>

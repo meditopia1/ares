@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { createAuthenticatedSupabaseClient, requireAnyRole } from '@/lib/auth-server'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabaseAdmin = createServerSupabaseClient()
+    await requireAnyRole(request, ['admin', 'system_admin', 'operations_manager', 'call_centre_agent']);
+    const supabase = createAuthenticatedSupabaseClient(request)
     
     // Get query parameters for filtering
     const searchParams = request.nextUrl.searchParams
@@ -20,13 +21,13 @@ export async function GET(request: NextRequest) {
     
     // If only filters are requested, return them quickly
     if (filtersOnly) {
-      const { data: brokers } = await supabaseAdmin
+      const { data: brokers } = await supabase
         .from('brokers')
         .select('code, name')
         .order('name')
       
       // Get ALL unique plan names using a more efficient query
-      const { data: plans, error: plansError } = await supabaseAdmin
+      const { data: plans, error: plansError } = await supabase
         .rpc('get_unique_plan_names')
       
       const uniquePlans = plans?.map((p: any) => p.plan_name) || []
@@ -43,35 +44,35 @@ export async function GET(request: NextRequest) {
     
     // If only stats are requested, return them quickly
     if (statsOnly) {
-      const { count: totalMembersCount } = await supabaseAdmin
+      const { count: totalMembersCount } = await supabase
         .from('members')
         .select('*', { count: 'exact', head: true })
       
-      const { count: totalDependantsCount } = await supabaseAdmin
+      const { count: totalDependantsCount } = await supabase
         .from('member_dependants')
         .select('*', { count: 'exact', head: true })
       
-      const { count: activeMembersCount } = await supabaseAdmin
+      const { count: activeMembersCount } = await supabase
         .from('members')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active')
       
-      const { count: activeDependantsCount } = await supabaseAdmin
+      const { count: activeDependantsCount } = await supabase
         .from('member_dependants')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active')
       
-      const { count: pendingCount } = await supabaseAdmin
+      const { count: pendingCount } = await supabase
         .from('members')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending')
       
-      const { count: suspendedMembersCount } = await supabaseAdmin
+      const { count: suspendedMembersCount } = await supabase
         .from('members')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'suspended')
       
-      const { count: suspendedDependantsCount } = await supabaseAdmin
+      const { count: suspendedDependantsCount } = await supabase
         .from('member_dependants')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'suspended')
@@ -87,7 +88,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Build query with filters
-    let query = supabaseAdmin
+    let query = supabase
       .from('members')
       .select('*, brokers(code, name)', { count: 'exact' })
       .order('created_at', { ascending: false })
@@ -134,7 +135,7 @@ export async function GET(request: NextRequest) {
     let additionalMembers: any[] = [];
     if (search && (!members || members.length === 0)) {
       const searchTerms = search.trim().split(/\s+/);
-      let dependantsQuery = supabaseAdmin.from('member_dependants').select('member_number, first_name, last_name');
+      let dependantsQuery = supabase.from('member_dependants').select('member_number, first_name, last_name');
       
       if (searchTerms.length === 1) {
         dependantsQuery = dependantsQuery.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%`);
@@ -149,7 +150,7 @@ export async function GET(request: NextRequest) {
       
       if (dependants && dependants.length > 0) {
         const memberNumbers = [...new Set(dependants.map(d => d.member_number))];
-        const { data: mainMembers } = await supabaseAdmin
+        const { data: mainMembers } = await supabase
           .from('members')
           .select('*, brokers(code, name)')
           .in('member_number', memberNumbers);
@@ -187,7 +188,7 @@ export async function GET(request: NextRequest) {
 
       // Fetch dependants if requested
       if (includeDependants) {
-        const { data: dependants } = await supabaseAdmin
+        const { data: dependants } = await supabase
           .from('member_dependants')
           .select('*')
           .eq('member_number', member.member_number)
@@ -223,35 +224,35 @@ export async function GET(request: NextRequest) {
     }))
 
     // Get all stats (unfiltered) - include dependants
-    const { count: totalMembersCount } = await supabaseAdmin
+    const { count: totalMembersCount } = await supabase
       .from('members')
       .select('*', { count: 'exact', head: true })
     
-    const { count: totalDependantsCount } = await supabaseAdmin
+    const { count: totalDependantsCount } = await supabase
       .from('member_dependants')
       .select('*', { count: 'exact', head: true })
     
-    const { count: activeMembersCount } = await supabaseAdmin
+    const { count: activeMembersCount } = await supabase
       .from('members')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'active')
     
-    const { count: activeDependantsCount } = await supabaseAdmin
+    const { count: activeDependantsCount } = await supabase
       .from('member_dependants')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'active')
     
-    const { count: pendingCount } = await supabaseAdmin
+    const { count: pendingCount } = await supabase
       .from('members')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'pending')
     
-    const { count: suspendedMembersCount } = await supabaseAdmin
+    const { count: suspendedMembersCount } = await supabase
       .from('members')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'suspended')
     
-    const { count: suspendedDependantsCount } = await supabaseAdmin
+    const { count: suspendedDependantsCount } = await supabase
       .from('member_dependants')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'suspended')
@@ -264,12 +265,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Get filter options
-    const { data: brokers } = await supabaseAdmin
+    const { data: brokers } = await supabase
       .from('brokers')
       .select('code, name')
       .order('name')
     
-    const { data: plans } = await supabaseAdmin
+    const { data: plans } = await supabase
       .from('members')
       .select('plan_name')
       .not('plan_name', 'is', null)

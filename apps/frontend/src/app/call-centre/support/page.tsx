@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
 import { Button } from '@/components/ui/button';
 import { User, Eye } from 'lucide-react';
+import { authFetch } from '@/lib/auth-fetch';
 
 interface Application {
   id: string;
@@ -31,7 +32,10 @@ export default function CallCentreSupportPage() {
 
   const loadApplications = async () => {
     try {
-      const response = await fetch('/api/admin/applications');
+      const response = await authFetch('/api/call-centre/applications');
+      if (!response.ok) {
+        throw new Error('Failed to fetch applications');
+      }
       const data = await response.json();
       const allApps = data.applications || [];
       setApplications(allApps.filter((app: Application) => app.status === 'submitted'));
@@ -46,15 +50,31 @@ export default function CallCentreSupportPage() {
   return (
     <SidebarLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Member Support</h1>
-          <p className="text-gray-600 mt-1">
-            {applications.length} new application{applications.length !== 1 ? 's' : ''}
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Member Support</h1>
+            <p className="text-gray-600 mt-1">
+              {loading
+                ? 'Loading member support queue...'
+                : `${applications.length} new application${applications.length !== 1 ? 's' : ''}`}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => router.push('/call-centre/dashboard')}>
+              Dashboard
+            </Button>
+            <Button onClick={() => router.push('/apply?source=call-centre')}>
+              + New Application
+            </Button>
+          </div>
         </div>
 
         {loading ? (
-          <p className="text-center py-8">Loading...</p>
+          <div className="space-y-3">
+            <div className="p-4 border rounded-lg bg-white">
+              <p className="text-sm text-gray-500">Loading pending applications...</p>
+            </div>
+          </div>
         ) : (
           <>
             {applications.length > 0 && (

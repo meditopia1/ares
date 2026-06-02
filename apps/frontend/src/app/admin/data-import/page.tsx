@@ -5,6 +5,7 @@ import { SidebarLayout } from '@/components/layout/sidebar-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Upload, FileSpreadsheet, Database, CheckCircle, AlertCircle, Download, Eye } from 'lucide-react';
+import { authFetch } from '@/lib/auth-fetch';
 
 interface ImportFile {
   id: string;
@@ -99,12 +100,8 @@ export default function DataImportPage() {
         formData.append('file', file);
         formData.append('type', type);
 
-        const token = localStorage.getItem('access_token');
-        const response = await fetch('/api/data-import/upload', {
+        const response = await authFetch('/api/data-import/upload', {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
           body: formData,
         });
 
@@ -147,11 +144,9 @@ export default function DataImportPage() {
     ));
 
     try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch(`/api/data-import/import/${fileId}`, {
+      const response = await authFetch(`/api/data-import/import/${fileId}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });

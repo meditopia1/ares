@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireRole } from '@/lib/auth-server';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -7,11 +8,11 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 // GET - Fetch provider's claims
 export async function GET(request: NextRequest) {
   try {
+    const user = await requireRole(request, 'provider');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { searchParams } = new URL(request.url);
     
-    // TODO: Get provider_id from authenticated session
-    const providerId = searchParams.get('provider_id');
+    const providerId = user.providerId;
     const status = searchParams.get('status');
     const dateFrom = searchParams.get('date_from');
     const dateTo = searchParams.get('date_to');
@@ -28,38 +29,14 @@ export async function GET(request: NextRequest) {
     // Build query
     let query = supabase
       .from('claims')
-      .select(`
-        id,
-        claim_number,
-        member_id,
-        provider_id,
-        benefit_type,
-        service_date,
-        submission_date,
-        claimed_amount,
-        approved_amount,
-        claim_status,
-        rejection_reason,
-        rejection_code,
-        pend_reason,
-        approved_date,
-        paid_date,
-        payment_reference,
-        claim_data,
-        created_at,
-        members (
-          member_number,
-          first_name,
-          last_name
-        )
-      `)
+      .select('*')
       .eq('provider_id', providerId)
       .order('submission_date', { ascending: false })
       .limit(limit);
 
     // Apply filters
     if (status) {
-      query = query.eq('claim_status', status);
+      query = query.eq('status', status);
     }
 
     if (dateFrom) {
@@ -80,8 +57,27 @@ export async function GET(request: NextRequest) {
       throw error;
     }
 
+    const memberIds = [...new Set((claims || []).map((claim) => claim.member_id).filter(Boolean))];
+    const { data: members } = memberIds.length > 0
+      ? await supabase
+          .from('members')
+          .select('id, member_number, first_name, last_name')
+          .in('id', memberIds)
+      : { data: [] as any[] };
+
+    const membersMap = new Map((members || []).map((member: any) => [member.id, member]));
+
+    const normalizedClaims = (claims || []).map((claim: any) => ({
+      ...claim,
+      benefit_type: claim.benefit_type || claim.claim_type,
+      claim_status: claim.status,
+      pend_reason: claim.pended_reason,
+      approved_date: claim.approved_at,
+      members: claim.member_id ? membersMap.get(claim.member_id) || null : null,
+    }));
+
     // Apply search filter if provided
-    let filteredClaims = claims || [];
+    let filteredClaims = normalizedClaims;
     if (search && search.trim() !== '') {
       const searchLower = search.toLowerCase();
       filteredClaims = filteredClaims.filter(claim => {
@@ -111,13 +107,32 @@ export async function GET(request: NextRequest) {
         .reduce((sum, c) => sum + parseFloat(c.approved_amount || '0'), 0)
     };
 
+    const dashboardStats = {
+      ...stats,
+      totalClaims: stats.total,
+      pendingClaims: stats.pending,
+      approvedClaims: stats.approved,
+      totalApproved: stats.total_approved,
+      totalPending: filteredClaims
+        .filter((c) => c.claim_status === 'pending' || c.claim_status === 'submitted' || c.claim_status === 'pended')
+        .reduce((sum, c) => sum + parseFloat(c.claimed_amount || '0'), 0)
+    };
+
     return NextResponse.json({
       claims: filteredClaims,
-      stats
+      stats: dashboardStats
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in provider claims API:', error);
+
+    if (error.message.includes('Access denied') || error.message.includes('Authentication required')) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.message.includes('Access denied') ? 403 : 401 }
+      );
+    }
+
     return NextResponse.json(
       { 
         error: 'Failed to fetch claims',

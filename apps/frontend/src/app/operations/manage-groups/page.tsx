@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/toast';
+import { authFetch } from '@/lib/auth-fetch';
+import { useAuth } from '@/contexts/auth-context';
 
 interface PaymentGroup {
   id: string;
@@ -30,7 +32,6 @@ interface Member {
   id_number?: string;
   date_of_birth?: string;
   monthly_premium: number;
-  employee_number?: string;
   payment_group_id?: string;
   collection_method: string;
   phone?: string;
@@ -40,6 +41,9 @@ interface Member {
 
 export default function ManageGroupsPage() {
   const { addToast } = useToast();
+  const { user, loading: authLoading } = useAuth();
+  const isFinanceViewer = user?.roles?.includes('finance_manager') ?? false;
+  const canEditGroups = !isFinanceViewer;
   const [groups, setGroups] = useState<PaymentGroup[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<PaymentGroup | null>(null);
   const [groupMembers, setGroupMembers] = useState<Member[]>([]);
@@ -56,7 +60,6 @@ export default function ManageGroupsPage() {
     id_number: '',
     commence_date: '',
     monthly_premium: '',
-    employee_number: '',
     phone: '',
     email: '',
   });
@@ -106,18 +109,33 @@ export default function ManageGroupsPage() {
   };
 
   useEffect(() => {
+    if (authLoading || !user) return;
     fetchGroups();
-  }, []);
+  }, [authLoading, user?.id]);
 
   useEffect(() => {
+    if (authLoading || !user) return;
     if (selectedGroup) {
       fetchGroupMembers(selectedGroup.id);
     }
-  }, [selectedGroup]);
+  }, [authLoading, user?.id, selectedGroup]);
+
+  if (authLoading) {
+    return (
+      <SidebarLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 text-sm">Loading groups...</p>
+          </div>
+        </div>
+      </SidebarLayout>
+    );
+  }
 
   const fetchGroups = async () => {
     try {
-      const response = await fetch('/api/operations/payment-groups');
+      const response = await authFetch('/api/operations/payment-groups');
       if (response.ok) {
         const data = await response.json();
         setGroups(data);
@@ -131,7 +149,7 @@ export default function ManageGroupsPage() {
 
   const fetchGroupMembers = async (groupId: string) => {
     try {
-      const response = await fetch(`/api/operations/payment-groups/${groupId}/members`);
+      const response = await authFetch(`/api/operations/payment-groups/${groupId}/members`);
       if (response.ok) {
         const data = await response.json();
         setGroupMembers(data);
@@ -151,7 +169,7 @@ export default function ManageGroupsPage() {
       
       const method = editingMember ? 'PUT' : 'POST';
 
-      const createResponse = await fetch(url, {
+      const createResponse = await authFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -172,7 +190,6 @@ export default function ManageGroupsPage() {
           id_number: '',
           commence_date: '',
           monthly_premium: '',
-          employee_number: '',
           phone: '',
           email: '',
         });
@@ -208,7 +225,7 @@ export default function ManageGroupsPage() {
     if (!confirm('Remove this member from the group?')) return;
 
     try {
-      const response = await fetch(`/api/operations/payment-groups/${selectedGroup.id}/members/${memberId}`, {
+      const response = await authFetch(`/api/operations/payment-groups/${selectedGroup.id}/members/${memberId}`, {
         method: 'DELETE',
       });
 
@@ -241,7 +258,7 @@ export default function ManageGroupsPage() {
     if (!confirm('Send EFT payment notifications to all members in this group?')) return;
 
     try {
-      const response = await fetch(`/api/operations/payment-groups/${groupId}/notify`, {
+      const response = await authFetch(`/api/operations/payment-groups/${groupId}/notify`, {
         method: 'POST',
       });
 
@@ -282,7 +299,7 @@ export default function ManageGroupsPage() {
       formData.append('groupId', selectedGroup.id);
       formData.append('collectionMethod', selectedGroup.collection_method);
 
-      const response = await fetch('/api/operations/members/bulk-upload', {
+      const response = await authFetch('/api/operations/members/bulk-upload', {
         method: 'POST',
         body: formData,
       });
@@ -331,14 +348,29 @@ export default function ManageGroupsPage() {
   });
 
   if (loading) {
-    return <div className="p-8">Loading...</div>;
+    return (
+      <SidebarLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          </div>
+        </div>
+      </SidebarLayout>
+    );
   }
 
   return (
     <SidebarLayout>
       <div className="p-8">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold">Manage Groups ({groups.length})</h1>
+          <div className="flex items-center justify-between gap-4">
+            <h1 className="text-3xl font-bold">Manage Groups ({groups.length})</h1>
+            {isFinanceViewer && (
+              <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+                Finance read-only view
+              </span>
+            )}
+          </div>
           <p className="text-gray-600 mt-1">Daily operations and member management for payment groups</p>
         </div>
 
@@ -513,31 +545,37 @@ export default function ManageGroupsPage() {
                       <CardTitle>Group Members ({groupMembers.length})</CardTitle>
                       <CardDescription>Current members in this group</CardDescription>
                     </div>
-                    <div className="flex gap-2">
-                      <div className="relative">
-                        <input
-                          type="file"
-                          accept=".xlsx,.xls"
-                          onChange={handleBulkUpload}
-                          className="hidden"
-                          id="bulk-upload-input"
-                          disabled={uploadingFile}
-                        />
-                        <Button
-                          variant="outline"
-                          onClick={() => document.getElementById('bulk-upload-input')?.click()}
-                          disabled={uploadingFile}
-                        >
-                          {uploadingFile ? 'Uploading...' : '📤 Bulk Upload Excel'}
+                    {canEditGroups ? (
+                      <div className="flex gap-2">
+                        <div className="relative">
+                          <input
+                            type="file"
+                            accept=".xlsx,.xls"
+                            onChange={handleBulkUpload}
+                            className="hidden"
+                            id="bulk-upload-input"
+                            disabled={uploadingFile}
+                          />
+                          <Button
+                            variant="outline"
+                            onClick={() => document.getElementById('bulk-upload-input')?.click()}
+                            disabled={uploadingFile}
+                          >
+                            {uploadingFile ? 'Uploading...' : '📤 Bulk Upload Excel'}
+                          </Button>
+                        </div>
+                        <Button onClick={() => setShowAddMemberForm(!showAddMemberForm)}>
+                          {showAddMemberForm ? 'Cancel' : '+ Add New Member'}
                         </Button>
                       </div>
-                      <Button onClick={() => setShowAddMemberForm(!showAddMemberForm)}>
-                        {showAddMemberForm ? 'Cancel' : '+ Add New Member'}
-                      </Button>
-                    </div>
+                    ) : (
+                      <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+                        View only
+                      </span>
+                    )}
                   </div>
                   
-                  {showAddMemberForm && (
+                  {showAddMemberForm && canEditGroups && (
                     <div className="mt-4 p-4 border rounded bg-gray-50">
                       <h3 className="font-medium mb-4">
                         {editingMember ? `Edit Member: ${editingMember.first_name} ${editingMember.last_name}` : `Add New Member to ${selectedGroup.group_name}`}
@@ -608,13 +646,6 @@ export default function ManageGroupsPage() {
                             placeholder="e.g., 1796.00"
                           />
                         </div>
-                        <div>
-                          <Label>Employee Number</Label>
-                          <Input
-                            value={newMemberData.employee_number}
-                            onChange={(e) => setNewMemberData({...newMemberData, employee_number: e.target.value})}
-                          />
-                        </div>
                       </div>
                       <div className="flex gap-2 mt-4">
                         <Button onClick={createAndAddMember}>
@@ -630,7 +661,6 @@ export default function ManageGroupsPage() {
                             id_number: '',
                             commence_date: '',
                             monthly_premium: '',
-                            employee_number: '',
                             phone: '',
                             email: '',
                           });
@@ -655,7 +685,6 @@ export default function ManageGroupsPage() {
                             <th className="text-left p-3 text-sm font-medium">Email</th>
                             <th className="text-left p-3 text-sm font-medium">Commence Date</th>
                             <th className="text-left p-3 text-sm font-medium">Premium</th>
-                            <th className="text-left p-3 text-sm font-medium">Employee Nr</th>
                             <th className="text-left p-3 text-sm font-medium">Actions</th>
                           </tr>
                         </thead>
@@ -670,38 +699,40 @@ export default function ManageGroupsPage() {
                               <td className="p-3 text-sm">{member.email || '-'}</td>
                               <td className="p-3 text-sm">{member.date_of_birth || '-'}</td>
                               <td className="p-3 text-sm">R{member.monthly_premium}</td>
-                              <td className="p-3 text-sm">{member.employee_number || '-'}</td>
                               <td className="p-3 text-sm">
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => {
-                                      setEditingMember(member);
-                                      setNewMemberData({
-                                        member_number: member.member_number,
-                                        first_name: member.first_name,
-                                        last_name: member.last_name,
-                                        id_number: member.id_number || '',
-                                        commence_date: member.date_of_birth || '',
-                                        monthly_premium: member.monthly_premium.toString(),
-                                        employee_number: member.employee_number || '',
-                                        phone: member.phone || '',
-                                        email: member.email || '',
-                                      });
-                                      setShowAddMemberForm(true);
-                                    }}
-                                  >
-                                    Edit
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => removeMemberFromGroup(member.id)}
-                                  >
-                                    Delete
-                                  </Button>
-                                </div>
+                                {canEditGroups ? (
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        setEditingMember(member);
+                                        setNewMemberData({
+                                          member_number: member.member_number,
+                                          first_name: member.first_name,
+                                          last_name: member.last_name,
+                                          id_number: member.id_number || '',
+                                          commence_date: member.date_of_birth || '',
+                                          monthly_premium: member.monthly_premium.toString(),
+                                          phone: member.phone || '',
+                                          email: member.email || '',
+                                        });
+                                        setShowAddMemberForm(true);
+                                      }}
+                                    >
+                                      Edit
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => removeMemberFromGroup(member.id)}
+                                    >
+                                      Delete
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-gray-400">View only</span>
+                                )}
                               </td>
                             </tr>
                           ))}

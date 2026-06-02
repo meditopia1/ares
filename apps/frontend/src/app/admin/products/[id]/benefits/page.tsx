@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
+import { PageLoading } from '@/components/layout/page-loading';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-// import { apiClient } from '@/lib/api-client'; // Removed - backend no longer exists
 import { PolicySectionItems } from '@/components/policy/PolicySectionItems';
+import { authFetch } from '@/lib/auth-fetch';
 
 interface Definition {
   id: string;
@@ -37,14 +37,8 @@ export default function PolicyDocumentPage() {
   const activeTab = searchParams.get('tab') || 'definitions';
 
   const [product, setProduct] = useState<any>(null);
-  const [definitions, setDefinitions] = useState<Definition[]>([]);
   const [sectionItems, setSectionItems] = useState<any[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [addingNew, setAddingNew] = useState(false);
-  const [formData, setFormData] = useState({ term: '', definition: '', category: 'general' });
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [filterCategory, setFilterCategory] = useState<string>('all');
 
   useEffect(() => {
     fetchData();
@@ -53,16 +47,17 @@ export default function PolicyDocumentPage() {
   const fetchData = async () => {
     try {
       console.log('[fetchData] Starting fetch for product:', productId, 'tab:', activeTab);
-      
       // Fetch product from Supabase
-      const productRes = await fetch(`/api/admin/products/${productId}`);
+      const productRes = await authFetch(`/api/admin/products/${productId}`);
       if (productRes.ok) {
         const productData = await productRes.json();
         setProduct(productData);
+      } else {
+        console.error('Failed to fetch product:', productRes.status, productRes.statusText);
       }
       
       // Fetch policy section items
-      const sectionsRes = await fetch(`/api/admin/products/${productId}/policy-sections?t=${Date.now()}`);
+      const sectionsRes = await authFetch(`/api/admin/products/${productId}/policy-sections?t=${Date.now()}`);
       if (sectionsRes.ok) {
         const sectionsData = await sectionsRes.json();
         
@@ -81,22 +76,8 @@ export default function PolicyDocumentPage() {
           setSectionItems([]);
         }
         
-        // For definitions tab, also set the definitions state for backward compatibility
-        if (activeTab === 'definitions' && sectionsData.sections && sectionsData.sections['definitions']) {
-          // Convert section items to definition format
-          const defs = sectionsData.sections['definitions'].map((item: any) => ({
-            id: item.id,
-            term: item.title,
-            definition: item.content,
-            category: 'general',
-            display_order: item.display_order
-          }));
-          console.log('[fetchData] Setting definitions:', defs.length);
-          setDefinitions(defs);
-        } else if (activeTab === 'definitions') {
-          console.log('[fetchData] No definitions found');
-          setDefinitions([]);
-        }
+      } else {
+        console.error('Failed to fetch policy sections:', sectionsRes.status, sectionsRes.statusText);
       }
     } catch (error) {
       console.error('Failed to fetch data:', error);
@@ -105,150 +86,64 @@ export default function PolicyDocumentPage() {
     }
   };
 
-  const handleEdit = (def: Definition) => {
-    setEditingId(def.id);
-    setFormData({ term: def.term, definition: def.definition, category: def.category });
-    setAddingNew(false);
-  };
-
-  const handleAddNew = () => {
-    setAddingNew(true);
-    setEditingId(null);
-    setFormData({ term: '', definition: '', category: 'general' });
-  };
-
-  const handleSave = async () => {
-    alert('This feature is temporarily disabled - backend removed');
-    return;
-    /*
-    if (!formData.term || !formData.definition) {
-      alert('Term and definition are required');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const token = apiClient.getAccessToken();
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      };
-
-      if (editingId) {
-        // Update existing
-        await fetch(`http://localhost:3000/api/v1/products/definitions/${editingId}`, {
-          method: 'PUT',
-          headers,
-          body: JSON.stringify(formData),
-        });
-      } else {
-        // Add new
-        await fetch(`http://localhost:3000/api/v1/products/${productId}/definitions`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(formData),
-        });
-      }
-
-      setEditingId(null);
-      setAddingNew(false);
-      setFormData({ term: '', definition: '', category: 'general' });
-      fetchData();
-      alert('Definition saved successfully');
-    } catch (error) {
-      console.error('Failed to save definition:', error);
-      alert('Failed to save definition');
-    } finally {
-      setSaving(false);
-    }
-    */
-  };
-
-  const handleDelete = async (id: string) => {
-    alert('This feature is temporarily disabled - backend removed');
-    return;
-    /*
-    if (!confirm('Are you sure you want to delete this definition?')) return;
-
-    try {
-      const token = apiClient.getAccessToken();
-      await fetch(`http://localhost:3000/api/v1/products/definitions/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-
-      fetchData();
-      alert('Definition deleted successfully');
-    } catch (error) {
-      console.error('Failed to delete definition:', error);
-      alert('Failed to delete definition');
-    }
-    */
-  };
-
-  const handleCancel = () => {
-    setEditingId(null);
-    setAddingNew(false);
-    setFormData({ term: '', definition: '', category: 'general' });
-  };
-
-  const filteredDefinitions = filterCategory === 'all' 
-    ? definitions 
-    : definitions.filter(def => def.category === filterCategory);
-
   const handleAddSectionItem = async (data: { title: string; content: string }) => {
-    alert('This feature is temporarily disabled - backend removed');
-    return;
-    /*
-    const token = apiClient.getAccessToken();
-    await fetch(`http://localhost:3000/api/v1/products/${productId}/section-items/${activeTab}`, {
+    const response = await authFetch(`/api/admin/products/${productId}/policy-sections`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        sectionType: activeTab,
+        title: data.title,
+        content: data.content,
+      }),
     });
-    fetchData();
-    */
+
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || 'Failed to add section item');
+    }
+
+    await fetchData();
   };
 
   const handleUpdateSectionItem = async (itemId: string, data: { title: string; content: string }) => {
-    alert('This feature is temporarily disabled - backend removed');
-    return;
-    /*
-    const token = apiClient.getAccessToken();
-    await fetch(`http://localhost:3000/api/v1/products/section-items/${itemId}`, {
+    const response = await authFetch(`/api/admin/products/policy-sections/${itemId}`, {
       method: 'PUT',
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        title: data.title,
+        content: data.content,
+      }),
     });
-    fetchData();
-    */
+
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || 'Failed to update section item');
+    }
+
+    await fetchData();
   };
 
   const handleDeleteSectionItem = async (itemId: string) => {
-    alert('This feature is temporarily disabled - backend removed');
-    return;
-    /*
-    const token = apiClient.getAccessToken();
-    await fetch(`http://localhost:3000/api/v1/products/section-items/${itemId}`, {
+    const response = await authFetch(`/api/admin/products/policy-sections/${itemId}`, {
       method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` },
     });
-    fetchData();
-    */
+
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || 'Failed to delete section item');
+    }
+
+    await fetchData();
   };
 
   if (loading) {
     return (
       <SidebarLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <p>Loading...</p>
-        </div>
+        <PageLoading message="Loading product benefits..." />
       </SidebarLayout>
     );
   }

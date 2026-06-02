@@ -279,7 +279,7 @@ export async function PATCH(request: NextRequest) {
         console.log('⚠️  No plan_id available, skipping benefit usage initialization')
       }
 
-      // Copy dependents to member_dependents if any
+    // Copy dependents to member_dependants if any
       const { data: appDependents } = await supabaseAdmin
         .from('application_dependents')
         .select('*')
@@ -297,8 +297,25 @@ export async function PATCH(request: NextRequest) {
         }))
 
         await supabaseAdmin
-          .from('member_dependents')
+          .from('member_dependants')
           .insert(memberDependents)
+      }
+
+      if (application.contact_id) {
+        const { error: contactUpdateError } = await supabaseAdmin
+          .from('contacts')
+          .update({
+            is_lead: false,
+            is_applicant: false,
+            is_member: true,
+            member_activated_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', application.contact_id)
+
+        if (contactUpdateError) {
+          console.error('Failed to update linked contact after approval:', contactUpdateError)
+        }
       }
 
       // DELETE APPLICATION DATA after successful member creation

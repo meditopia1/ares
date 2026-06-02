@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { requireAnyRole } from '@/lib/auth-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,6 +9,8 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    await requireAnyRole(request, ['admin', 'system_admin']);
+    
     const supabase = createServerSupabaseClient()
     const body = await request.json()
 
@@ -42,35 +45,11 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  try {
-    const supabase = createServerSupabaseClient()
-
-    // Check if broker has members
-    const { count } = await supabase
-      .from('members')
-      .select('*', { count: 'exact', head: true })
-      .eq('broker_id', params.id)
-
-    if (count && count > 0) {
-      return NextResponse.json(
-        { error: `Cannot delete broker with ${count} active members. Please reassign members first.` },
-        { status: 400 }
-      )
-    }
-
-    const { error } = await supabase
-      .from('brokers')
-      .delete()
-      .eq('id', params.id)
-
-    if (error) throw error
-
-    return NextResponse.json({ success: true })
-  } catch (error: any) {
-    console.error('Error deleting broker:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete broker' },
-      { status: 500 }
-    )
-  }
+  return NextResponse.json(
+    {
+      error: 'Broker deletion is disabled. Use inactive/archived status instead.',
+      code: 'DELETE_DISABLED'
+    },
+    { status: 403 }
+  );
 }

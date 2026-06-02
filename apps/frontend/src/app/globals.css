@@ -12,16 +12,16 @@
     --popover-foreground: 222.2 84% 4.9%;
     --primary: 199 89% 48%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
+    --secondary: 210 40% 96.8%;
     --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
+    --muted: 210 40% 97.4%;
     --muted-foreground: 215.4 16.3% 46.9%;
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
+    --border: 214 24% 86%;
+    --input: 214 24% 84%;
     --ring: 199 89% 48%;
     --radius: 0.5rem;
   }
@@ -55,6 +55,24 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /* Day1 Global Workspace Theme: shared page surface for every sidebar workspace. */
+  .workspace-main {
+    background:
+      radial-gradient(circle at top right, rgba(34, 211, 238, 0.08), transparent 24%),
+      radial-gradient(circle at top left, rgba(168, 85, 247, 0.06), transparent 28%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 1));
+  }
+
+  .workspace-field {
+    @apply h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm shadow-slate-200/70 focus:outline-none focus:ring-[3px] focus:ring-primary/20 focus:border-primary;
+  }
+
+  .workspace-textarea {
+    @apply rounded-lg border border-slate-300 bg-white px-3 py-2 shadow-sm shadow-slate-200/70 focus:outline-none focus:ring-[3px] focus:ring-primary/20 focus:border-primary;
   }
 }
 

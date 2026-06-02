@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
+import { PageLoading } from '@/components/layout/page-loading';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { authFetch } from '@/lib/auth-fetch';
 
 interface Provider {
   id: string;
@@ -54,7 +56,7 @@ export default function ProviderDetailPage() {
   async function fetchProvider() {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/admin/providers/${params.id}`);
+      const response = await authFetch(`/api/admin/providers/${params.id}`);
       const data = await response.json();
 
       if (data.error) {
@@ -81,7 +83,7 @@ export default function ProviderDetailPage() {
       setIsSaving(true);
       setError('');
 
-      const response = await fetch(`/api/admin/providers/${params.id}`, {
+      const response = await authFetch(`/api/admin/providers/${params.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -116,7 +118,7 @@ export default function ProviderDetailPage() {
       setIsDeleting(true);
       setError('');
 
-      const response = await fetch(`/api/admin/providers/${params.id}`, {
+      const response = await authFetch(`/api/admin/providers/${params.id}`, {
         method: 'DELETE',
       });
 
@@ -137,9 +139,7 @@ export default function ProviderDetailPage() {
 
   if (loading || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
+      <PageLoading message="Loading provider details..." />
     );
   }
 

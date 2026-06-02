@@ -45,9 +45,9 @@ export default function DashboardPage() {
     } else if (role === 'finance_manager') {
       console.log('→ Redirecting to finance dashboard');
       router.push('/finance/dashboard');
-    } else if (role === 'claims_assessor') {
-      console.log('→ Redirecting to claims assessor dashboard');
-      router.push('/claims-assessor/dashboard');
+    } else if (role === 'claims') {
+      console.log('→ Redirecting to claims dashboard');
+      router.push('/claims/dashboard');
     } else if (role === 'call_centre_agent') {
       console.log('→ Redirecting to call centre dashboard');
       window.location.href = '/call-centre/dashboard';

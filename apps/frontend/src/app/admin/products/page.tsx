@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
+import { InlinePageLoading } from '@/components/layout/page-loading';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PolicyDocumentViewer } from '@/components/policy/PolicyDocumentViewer';
+import { authFetch } from '@/lib/auth-fetch';
 
 interface Product {
   id: string;
@@ -41,10 +43,14 @@ interface Benefit {
 }
 
 export default function AdminProductsPage() {
+  const INITIAL_PRODUCTS = 3;
+  const PRODUCTS_BATCH_SIZE = 3;
   const router = useRouter();
   const { user, loading, isAuthenticated } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_PRODUCTS);
   const [viewingProduct, setViewingProduct] = useState<{ id: string; name: string } | null>(null);
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
 
@@ -52,47 +58,88 @@ export default function AdminProductsPage() {
     fetchProducts();
   }, []);
 
+  const mapProduct = (p: any): Product => ({
+    id: p.id,
+    name: p.name,
+    code: p.code,
+    slug: p.slug,
+    category: p.category,
+    regime: p.regime,
+    status: p.status,
+    description: p.description,
+    price_single: p.price_single || 0,
+    price_couple: p.price_couple || 0,
+    price_per_child: p.price_per_child || 0,
+    price_range_min: p.price_range_min || 0,
+    price_range_max: p.price_range_max || 0,
+    age_restriction: p.age_restriction || 'All ages',
+    monthlyPremium: p.monthly_premium || 0,
+    coverAmount: p.cover_amount || 0,
+    createdBy: p.created_by || 'System',
+    createdDate: p.created_at,
+    approvals: [],
+    benefits: p.benefits || [],
+  });
+
+  const loadBenefitsForProducts = async (targetProducts: Product[]) => {
+    const hydrated = await Promise.all(
+      targetProducts.map(async (product) => {
+        if (product.benefits && product.benefits.length > 0) {
+          return product;
+        }
+
+        try {
+          const benefitsResponse = await authFetch(`/api/admin/products/${product.id}/benefits`);
+          const benefitsData = await benefitsResponse.json();
+
+          return {
+            ...product,
+            benefits: benefitsData.benefits || [],
+          };
+        } catch (error) {
+          console.error(`Failed to fetch benefits for ${product.name}:`, error);
+          return {
+            ...product,
+            benefits: [],
+          };
+        }
+      })
+    );
+
+    setProducts((currentProducts) =>
+      currentProducts.map((product) => hydrated.find((item) => item.id === product.id) || product)
+    );
+  };
+
   const fetchProducts = async () => {
     try {
-      const response = await fetch('/api/admin/products');
+      const response = await authFetch('/api/admin/products');
       const data = await response.json();
-      
-      // Fetch benefits for each product
-      const productsWithBenefits = await Promise.all(
-        (data.products || []).map(async (p: any) => {
-          const benefitsResponse = await fetch(`/api/admin/products/${p.id}/benefits`);
-          const benefitsData = await benefitsResponse.json();
-          
-          return {
-            id: p.id,
-            name: p.name,
-            code: p.code,
-            slug: p.slug,
-            category: p.category,
-            regime: p.regime,
-            status: p.status,
-            description: p.description,
-            price_single: p.price_single || 0,
-            price_couple: p.price_couple || 0,
-            price_per_child: p.price_per_child || 0,
-            price_range_min: p.price_range_min || 0,
-            price_range_max: p.price_range_max || 0,
-            age_restriction: p.age_restriction || 'All ages',
-            monthlyPremium: p.monthly_premium || 0,
-            coverAmount: p.cover_amount || 0,
-            createdBy: p.created_by || 'System',
-            createdDate: p.created_at,
-            approvals: [],
-            benefits: benefitsData.benefits || []
-          };
-        })
-      );
-      
-      setProducts(productsWithBenefits);
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch products');
+      }
+
+      const mappedProducts = (data.products || []).map(mapProduct);
+      setProducts(mappedProducts);
+      await loadBenefitsForProducts(mappedProducts.slice(0, INITIAL_PRODUCTS));
     } catch (error) {
       console.error('Failed to fetch products:', error);
     } finally {
       setDataLoading(false);
+    }
+  };
+
+  const handleLoadMore = async () => {
+    const nextVisibleCount = Math.min(visibleCount + PRODUCTS_BATCH_SIZE, products.length);
+    const nextBatch = products.slice(visibleCount, nextVisibleCount);
+
+    setLoadingMore(true);
+    try {
+      await loadBenefitsForProducts(nextBatch);
+      setVisibleCount(nextVisibleCount);
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -103,7 +150,17 @@ export default function AdminProductsPage() {
   //   }
   // }, [loading, isAuthenticated, router]);
 
-  if (loading || dataLoading) return <div className="min-h-screen flex items-center justify-center"><p>Loading...</p></div>;
+  if (loading || dataLoading) {
+    return (
+      <SidebarLayout>
+        <InlinePageLoading
+          title="Policy Creator"
+          description="Create and manage product catalog with benefit rules"
+          message="Loading products..."
+        />
+      </SidebarLayout>
+    );
+  }
 
   const getStatusBadge = (status: Product['status']) => {
     const styles = {
@@ -115,6 +172,9 @@ export default function AdminProductsPage() {
     };
     return <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status] || 'bg-gray-100 text-gray-800'}`}>{status ? status.replace('_', ' ').toUpperCase() : 'UNKNOWN'}</span>;
   };
+
+  const visibleProducts = products.slice(0, visibleCount);
+  const hasMoreProducts = visibleCount < products.length;
 
   return (
     <SidebarLayout>
@@ -130,11 +190,13 @@ export default function AdminProductsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Product Catalog</CardTitle>
-            <CardDescription>All products and their approval status</CardDescription>
+            <CardDescription>
+              Showing {visibleProducts.length} of {products.length} products
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {products.map((product) => (
+              {visibleProducts.map((product) => (
                 <div key={product.id} className="border rounded-lg p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -242,6 +304,9 @@ export default function AdminProductsPage() {
                       </div>
                     </div>
                     <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => router.push(`/admin/products/${product.id}/edit`)}>
+                        Edit Product
+                      </Button>
                       <Button size="sm" variant="outline" onClick={() => router.push(`/admin/products/${product.id}/benefits`)}>
                         Configure Plan
                       </Button>
@@ -254,6 +319,14 @@ export default function AdminProductsPage() {
                 </div>
               ))}
             </div>
+
+            {hasMoreProducts && (
+              <div className="mt-6 flex justify-center">
+                <Button variant="outline" onClick={handleLoadMore} disabled={loadingMore}>
+                  {loadingMore ? 'Loading more...' : `Load 3 More Policies`}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

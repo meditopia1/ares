@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { authFetch } from '@/lib/auth-fetch';
 
 interface BenefitItem {
   name: string;
@@ -119,7 +120,7 @@ export default function NewProductPage() {
     };
 
     try {
-      const response = await fetch('/api/admin/products', {
+      const response = await authFetch('/api/admin/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(productData),

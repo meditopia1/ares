@@ -1,8 +1,13 @@
 /**
  * Supabase Storage Utilities
- * Handles file uploads for voice recordings, signatures, and documents
+ * Handles file uploads for voice recordings, signatures, and documents.
+ *
+ * Application steps may keep local preview URLs while the user is still busy
+ * with the form. Before final submission we normalize those values into real
+ * Supabase Storage URLs so the database only stores durable references.
  */
 
+import { ApplicationData } from '@/types/application'
 import { supabase } from '@/lib/supabase'
 
 const BUCKET_NAME = 'applications'
@@ -146,4 +151,77 @@ export function generateTempApplicationNumber(): string {
  */
 export function generateTempClaimNumber(): string {
   return `CLM-TEMP-${Date.now()}`
+}
+
+function isDurableStorageUrl(value?: string): boolean {
+  if (!value) return false
+  return /^https?:\/\//i.test(value)
+}
+
+async function convertUrlToBlob(value: string): Promise<Blob> {
+  const response = await fetch(value)
+  if (!response.ok) {
+    throw new Error(`Failed to read local asset: ${response.status}`)
+  }
+  return response.blob()
+}
+
+function buildApplicationUploadKey(data: ApplicationData): string {
+  const base =
+    data.idNumber ||
+    data.email ||
+    `${data.firstName || 'applicant'}-${data.lastName || 'application'}`
+
+  return base.replace(/[^a-z0-9]/gi, '-').replace(/-+/g, '-').toLowerCase()
+}
+
+/**
+ * Convert any local preview assets into durable bucket URLs before submit.
+ */
+export async function prepareApplicationAssetsForSubmit(
+  data: ApplicationData
+): Promise<Partial<ApplicationData>> {
+  const uploadKey = buildApplicationUploadKey(data)
+  const updates: Partial<ApplicationData> = {}
+
+  if (data.idDocumentUrl && !isDurableStorageUrl(data.idDocumentUrl)) {
+    updates.idDocumentUrl = await uploadDocument(data.idDocumentUrl, 'id', uploadKey)
+  }
+
+  if (data.selfieUrl && !isDurableStorageUrl(data.selfieUrl)) {
+    updates.selfieUrl = await uploadDocument(data.selfieUrl, 'selfie', uploadKey)
+  }
+
+  if (data.proofOfAddressUrl && !isDurableStorageUrl(data.proofOfAddressUrl)) {
+    updates.proofOfAddressUrl = await uploadDocument(data.proofOfAddressUrl, 'address', uploadKey)
+  }
+
+  if (data.proofOfAddressUrls?.length) {
+    const proofUrls = await Promise.all(
+      data.proofOfAddressUrls.map(async (url, index) => {
+        if (isDurableStorageUrl(url)) return url
+
+        const blob = await convertUrlToBlob(url)
+        const extension = blob.type.includes('pdf') ? 'pdf' : 'jpg'
+        const path = `documents/address/${uploadKey}-${Date.now()}-${index + 1}.${extension}`
+        return uploadToStorage(blob, path)
+      })
+    )
+
+    updates.proofOfAddressUrls = proofUrls
+    if (!updates.proofOfAddressUrl) {
+      updates.proofOfAddressUrl = proofUrls[0]
+    }
+  }
+
+  if (data.voiceRecordingUrl && !isDurableStorageUrl(data.voiceRecordingUrl)) {
+    const audioBlob = await convertUrlToBlob(data.voiceRecordingUrl)
+    updates.voiceRecordingUrl = await uploadVoiceRecording(audioBlob, uploadKey)
+  }
+
+  if (data.signatureUrl && !isDurableStorageUrl(data.signatureUrl)) {
+    updates.signatureUrl = await uploadSignature(data.signatureUrl, uploadKey)
+  }
+
+  return updates
 }

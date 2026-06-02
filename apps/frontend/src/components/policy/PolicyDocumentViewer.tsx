@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { authFetch } from '@/lib/auth-fetch';
 // import { apiClient } from '@/lib/api-client'; // Removed - backend no longer exists
 
 interface PolicyDocumentViewerProps {
@@ -27,7 +28,7 @@ export function PolicyDocumentViewer({ productId, productName, isOpen, onClose }
       setLoading(true);
       
       // Fetch policy section items from Supabase
-      const response = await fetch(`/api/admin/products/${productId}/policy-sections`);
+      const response = await authFetch(`/api/admin/products/${productId}/policy-sections`);
       const data = await response.json();
       
       if (data.sections) {

@@ -7,6 +7,8 @@ import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import { GlowingButton } from '@/components/ui/glowing-button';
 import { FeedbackWidget } from '@/components/feedback/feedback-widget';
+import { InlinePageLoading } from '@/components/layout/page-loading';
+import { authFetch } from '@/lib/auth-fetch';
 
 interface NavItem {
   name: string;
@@ -49,7 +51,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
       if (isAdmin || isCallCentre) {
         try {
           // Fetch applications count
-          const appResponse = await fetch('/api/admin/applications');
+          const appResponse = await authFetch(isCallCentre ? '/api/call-centre/applications' : '/api/admin/applications');
           const appData = await appResponse.json();
           
           // Call centre only sees 'submitted', admin sees both 'submitted' and 'under_review'
@@ -85,7 +87,8 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
     const isAdmin = userRoles.includes('system_admin');
     const isOperationsManager = userRoles.includes('operations_manager');
     const isBroker = userRoles.includes('broker');
-    const isClaimsAssessor = userRoles.includes('claims_assessor');
+    const isClaims = userRoles.includes('claims');
+    const isClaimsAssessor = userRoles.includes('claims_assessor') || isClaims;
     const isComplianceOfficer = userRoles.includes('compliance_officer');
     const isFinanceManager = userRoles.includes('finance_manager');
     const isMarketingManager = userRoles.includes('marketing_manager');
@@ -273,7 +276,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
         },
         {
           name: 'Feedback',
-          href: '/admin/feedback',
+          href: '/operations/feedback',
           glowColor: '#fb923c', // Orange
           icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -329,7 +332,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
         },
         {
           name: 'Call Centre',
-          href: '/operations/call-centre',
+          href: '/call-centre/dashboard',
           glowColor: '#14b8a6', // Teal
           icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -338,7 +341,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
           ),
         },
         {
-          name: 'Provider Onboarding',
+          name: 'Providers Directory',
           href: '/operations/providers',
           glowColor: '#f59e0b', // Amber
           icon: (
@@ -389,21 +392,11 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
         },
         {
           name: 'Feedback',
-          href: '/admin/feedback',
+          href: '/operations/feedback',
           glowColor: '#fb923c', // Orange
           icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-            </svg>
-          ),
-        },
-        {
-          name: 'Profile',
-          href: '/profile',
-          glowColor: '#a855f7', // Purple
-          icon: (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           ),
         },
@@ -496,12 +489,12 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
       ];
     }
 
-    // Claims Assessor navigation
-    if (isClaimsAssessor) {
+    // Claims navigation
+    if (isClaims) {
       return [
         {
           name: 'Dashboard',
-          href: '/claims-assessor/dashboard',
+          href: '/claims/dashboard',
           glowColor: '#3b82f6', // Blue
           icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -511,7 +504,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
         },
         {
           name: 'Claims Queue',
-          href: '/claims-assessor/queue',
+          href: '/claims/queue',
           glowColor: '#22c55e', // Green
           icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -521,7 +514,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
         },
         {
           name: 'Pre-Auth Queue',
-          href: '/claims-assessor/preauth',
+          href: '/claims/preauth',
           glowColor: '#8b5cf6', // Purple
           icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -531,7 +524,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
         },
         {
           name: 'Fraud Cases',
-          href: '/claims-assessor/fraud',
+          href: '/claims/fraud',
           glowColor: '#ef4444', // Red
           icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -562,6 +555,26 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
           icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+          ),
+        },
+        {
+          name: 'Member List',
+          href: '/operations/members',
+          glowColor: '#22c55e', // Green
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          ),
+        },
+        {
+          name: 'Group List',
+          href: '/operations/manage-groups',
+          glowColor: '#a855f7', // Purple
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           ),
         },
@@ -622,16 +635,6 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
           icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-            </svg>
-          ),
-        },
-        {
-          name: 'Profile',
-          href: '/profile',
-          glowColor: '#10b981', // Emerald
-          icon: (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           ),
         },
@@ -791,16 +794,6 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
             </svg>
           ),
         },
-        {
-          name: 'Profile',
-          href: '/profile',
-          glowColor: '#d946ef', // Fuchsia
-          icon: (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          ),
-        },
       ];
     }
 
@@ -877,16 +870,6 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
             </svg>
           ),
         },
-        {
-          name: 'Profile',
-          href: '/profile',
-          glowColor: '#6366f1', // Indigo
-          icon: (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          ),
-        },
       ];
     }
 
@@ -950,16 +933,6 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
           icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-            </svg>
-          ),
-        },
-        {
-          name: 'Profile',
-          href: '/profile',
-          glowColor: '#14b8a6', // Teal
-          icon: (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           ),
         },
@@ -1133,10 +1106,27 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
   // Show loading state while user data is being fetched
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+      <div className="min-h-screen bg-gray-50">
+        <div className="flex min-h-screen">
+          <aside className="hidden w-64 border-r border-gray-200 bg-white lg:block">
+            <div className="flex h-16 items-center border-b border-gray-200 px-4">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                  <span className="text-sm font-bold text-white">D1</span>
+                </div>
+                <span className="text-lg font-bold text-gray-900">Day1Main</span>
+              </div>
+            </div>
+            <div className="space-y-3 px-3 py-4">
+              {[...Array(6)].map((_, index) => (
+                <div key={index} className="h-12 animate-pulse rounded-lg bg-slate-100" />
+              ))}
+            </div>
+          </aside>
+
+          <main className="flex-1 p-6">
+            <InlinePageLoading message="Opening your workspace..." />
+          </main>
         </div>
       </div>
     );
@@ -1322,7 +1312,8 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
         </header>
 
         {/* Page content */}
-        <main className="p-6">
+        {/* Global Day1 workspace theme shell used across admin, finance, call centre, and other sidebar pages. */}
+        <main className="workspace-main p-6">
           {children}
         </main>
       </div>

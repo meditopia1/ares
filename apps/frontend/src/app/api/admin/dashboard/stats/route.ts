@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAnyRole } from '@/lib/auth-server';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function GET(request: NextRequest) {
   try {
+    // Require admin, system_admin, or operations_manager role
+    await requireAnyRole(request, ['admin', 'system_admin', 'operations_manager']);
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Fetch all statistics in parallel

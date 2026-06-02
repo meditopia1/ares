@@ -1,47 +1,78 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAnyRole } from '@/lib/auth-server';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Fetch ALL providers using pagination
-    let allProviders: any[] = [];
-    let from = 0;
-    const pageSize = 1000;
-    let hasMore = true;
+    await requireAnyRole(request, ['admin', 'system_admin', 'operations_manager']);
 
-    while (hasMore) {
-      const { data, error } = await supabase
-        .from('providers')
-        .select('*')
-        .order('name', { ascending: true })
-        .range(from, from + pageSize - 1);
+    const searchParams = request.nextUrl.searchParams;
+    const search = searchParams.get('search')?.trim() || '';
+    const status = searchParams.get('status') || '';
+    const limit = Math.max(1, Number(searchParams.get('limit') || '25'));
+    const offset = Math.max(0, Number(searchParams.get('offset') || '0'));
 
-      if (error) throw error;
+    let query = supabase
+      .from('providers')
+      .select('*', { count: 'exact' })
+      .order('name', { ascending: true })
+      .range(offset, offset + limit - 1);
 
-      if (data && data.length > 0) {
-        allProviders = [...allProviders, ...data];
-        from += pageSize;
-        hasMore = data.length === pageSize;
-      } else {
-        hasMore = false;
-      }
+    if (search) {
+      query = query.or(
+        `name.ilike.%${search}%,provider_number.ilike.%${search}%,practice_name.ilike.%${search}%`
+      );
     }
 
-    const stats = {
-      total: allProviders.length,
-      active: allProviders.filter(p => p.status === 'active').length,
-      pending: allProviders.filter(p => p.status === 'pending').length,
-      inactive: allProviders.filter(p => p.status === 'inactive').length,
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    const { data: providers, error, count } = await query;
+
+    if (error) throw error;
+
+    const statsQuery = async (statusValue?: string) => {
+      let q = supabase.from('providers').select('*', { count: 'exact', head: true });
+      if (statusValue) {
+        q = q.eq('status', statusValue);
+      }
+      if (search) {
+        q = q.or(
+          `name.ilike.%${search}%,provider_number.ilike.%${search}%,practice_name.ilike.%${search}%`
+        );
+      }
+      const { count: statCount, error: statError } = await q;
+      if (statError) throw statError;
+      return statCount || 0;
     };
 
-    console.log(`✅ API: Fetched ${allProviders.length} providers`);
+    const [total, active, pending, inactive] = await Promise.all([
+      statsQuery(),
+      statsQuery('active'),
+      statsQuery('pending'),
+      statsQuery('inactive'),
+    ]);
 
-    return NextResponse.json({ providers: allProviders, stats });
+    const stats = {
+      total,
+      active,
+      pending,
+      inactive,
+    };
+
+    console.log(`✅ API: Fetched ${providers?.length || 0} providers (total ${count || 0})`);
+
+    return NextResponse.json({
+      providers: providers || [],
+      total: count || 0,
+      stats,
+    });
   } catch (error: any) {
     console.error('Error fetching providers:', error);
     return NextResponse.json(
@@ -51,8 +82,10 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    await requireAnyRole(request, ['admin', 'system_admin']);
+
     const body = await request.json();
     const { login_email, login_password, first_name, last_name, ...providerData } = body;
 
@@ -128,14 +161,13 @@ export async function POST(request: Request) {
       }
     }
 
-    // Create provider with user_id link and login credentials
+    // Create provider with user_id link (password only stored in Supabase Auth)
     const { error } = await supabase
       .from('providers')
       .insert([{ 
         ...providerData, 
         user_id: userId,
         login_email: login_email || null,
-        login_password: login_password || null,
       }]);
 
     if (error) throw error;

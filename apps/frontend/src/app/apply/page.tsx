@@ -12,6 +12,8 @@ import { ApplicationData } from '@/types/application'
 
 export default function ApplyPage() {
   const searchParams = useSearchParams()
+  const source = searchParams.get('source')
+  const brokerCode = searchParams.get('brokerCode')
   const planId = searchParams.get('plan')
   const planName = searchParams.get('planName')
   const planConfig = searchParams.get('config')
@@ -34,6 +36,7 @@ export default function ApplyPage() {
     planName: planName || undefined,
     planConfig: (planConfig as 'single' | 'couple' | 'family') || undefined,
     monthlyPrice: monthlyPrice ? parseFloat(monthlyPrice) : undefined,
+    brokerCode: brokerCode || undefined,
   })
 
   const updateData = (data: Partial<ApplicationData>) => {
@@ -61,6 +64,11 @@ export default function ApplyPage() {
       <div className="bg-gradient-to-r from-green-600 to-green-700 border-b shadow-md">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <h1 className="text-3xl font-bold text-white mb-3">Day1Health Application</h1>
+          {(source === 'broker' || source === 'call-centre') && (
+            <div className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-sm text-white border border-white/20 mb-3">
+              {source === 'broker' ? 'Broker-assisted application' : 'Call-centre-assisted application'}
+            </div>
+          )}
           {planName && (
             <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-3 border border-white/20">
               <div className="flex flex-wrap items-center gap-3">

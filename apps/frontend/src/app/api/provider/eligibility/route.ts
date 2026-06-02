@@ -1,36 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+// Waiting periods by benefit type (in days)
+const WAITING_PERIODS = {
+  general: 90,        // 3 months - GP, dental, optical
+  specialist: 90,     // 3 months - Specialist consultations
+  hospital: 90,       // 3 months - Hospital admissions
+  maternity: 365,     // 12 months - Maternity benefits
+  pre_existing: 365   // 12 months - Pre-existing conditions
+};
 
-/**
- * POST /api/provider/eligibility
- * 
- * Real-time member eligibility and benefit verification
- * 
- * Body:
- * - memberNumber (optional): Member number
- * - idNumber (optional): ID number
- * 
- * At least one identifier is required
- */
+// Map benefit types to waiting period categories
+const BENEFIT_WAITING_PERIOD_MAP: { [key: string]: keyof typeof WAITING_PERIODS } = {
+  'gp_visit': 'general',
+  'dental': 'general',
+  'optical': 'general',
+  'specialist': 'specialist',
+  'hospital': 'hospital',
+  'maternity': 'maternity',
+  'pharmacy': 'general',
+  'pathology': 'general',
+  'radiology': 'general',
+  'physiotherapy': 'specialist',
+  'psychology': 'specialist',
+  'chronic_medication': 'general'
+};
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+);
+
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const body = await request.json();
-    const { memberNumber, idNumber } = body;
+    const { member_number, id_number, patient_name, date_of_birth } = body;
+    const normalizedMemberNumber = typeof member_number === 'string' ? member_number.trim() : '';
+    const normalizedIdNumber = typeof id_number === 'string' ? id_number.trim() : '';
+    const normalizedPatientName = typeof patient_name === 'string' ? patient_name.trim() : '';
 
-    // Validate input
-    if (!memberNumber && !idNumber) {
+    if (!normalizedMemberNumber && !normalizedIdNumber && !normalizedPatientName) {
       return NextResponse.json(
-        { error: 'Either memberNumber or idNumber is required' },
+        { error: 'member_number, id_number, or patient_name is required' },
         { status: 400 }
       );
     }
 
-    // Search for member
-    let query = supabase
+    // Build a forgiving lookup so providers can search by either identifier
+    let query = supabaseAdmin
       .from('members')
       .select(`
         id,
@@ -41,246 +64,211 @@ export async function POST(request: NextRequest) {
         date_of_birth,
         status,
         plan_name,
-        plan_id,
-        start_date,
-        broker_code,
         monthly_premium,
-        products (
-          id,
-          name,
-          code,
-          regime
-        )
+        broker_code,
+        start_date,
+        email,
+      mobile
       `)
-      .limit(1);
+      .limit(10);
 
-    if (memberNumber) {
-      query = query.eq('member_number', memberNumber);
-    } else if (idNumber) {
-      query = query.eq('id_number', idNumber);
+    if (normalizedPatientName) {
+      const nameTerms = normalizedPatientName
+        .toLowerCase()
+        .split(/\s+/)
+        .filter(Boolean);
+
+      if (nameTerms.length > 0) {
+        query = query.or(
+          nameTerms
+            .map((term) => `first_name.ilike.%${term}%,last_name.ilike.%${term}%`)
+            .join(',')
+        );
+      }
+    } else if (normalizedMemberNumber && normalizedIdNumber) {
+      query = query.or(
+        `member_number.ilike.${normalizedMemberNumber},id_number.eq.${normalizedIdNumber}`
+      );
+    } else if (normalizedMemberNumber) {
+      query = query.ilike('member_number', normalizedMemberNumber);
+    } else {
+      query = query.eq('id_number', normalizedIdNumber);
     }
 
-    const { data: member, error: memberError } = await query.single();
+    const { data: memberCandidates, error } = await query;
 
-    if (memberError || !member) {
+    const member =
+      memberCandidates?.find((candidate) =>
+        normalizedPatientName &&
+        normalizedPatientName
+          .toLowerCase()
+          .split(/\s+/)
+          .filter(Boolean)
+          .every((term) =>
+            `${candidate.first_name || ''} ${candidate.last_name || ''}`
+              .toLowerCase()
+              .includes(term)
+          )
+      ) ||
+      memberCandidates?.find((candidate) =>
+        normalizedMemberNumber &&
+        normalizedIdNumber &&
+        candidate.member_number?.toLowerCase() === normalizedMemberNumber.toLowerCase() &&
+        candidate.id_number === normalizedIdNumber
+      ) ||
+      memberCandidates?.find((candidate) =>
+        normalizedMemberNumber &&
+        candidate.member_number?.toLowerCase() === normalizedMemberNumber.toLowerCase()
+      ) ||
+      memberCandidates?.find((candidate) =>
+        normalizedIdNumber &&
+        candidate.id_number === normalizedIdNumber
+      ) ||
+      null;
+
+    if (error || !member) {
       return NextResponse.json({
         eligible: false,
         message: 'Member not found',
-        member: null,
-        policy: null,
-        waitingPeriods: null,
-        benefits: null
+        member: null
       });
     }
 
-    // Check member status
-    const isActive = member.status === 'active';
-    
-    if (!isActive) {
+    // Verify date of birth if provided
+    if (date_of_birth && member.date_of_birth) {
+      const providedDOB = new Date(date_of_birth).toISOString().split('T')[0];
+      const memberDOB = new Date(member.date_of_birth).toISOString().split('T')[0];
+      
+      if (providedDOB !== memberDOB) {
+        return NextResponse.json({
+          eligible: false,
+          message: 'Date of birth does not match',
+          member: null
+        });
+      }
+    }
+
+    // Check if member is active
+    if (member.status !== 'active') {
       return NextResponse.json({
         eligible: false,
-        message: `Member is not active. Current status: ${member.status}`,
+        message: `Member status is ${member.status}`,
         member: {
-          memberNumber: member.member_number,
-          firstName: member.first_name,
-          lastName: member.last_name,
-          idNumber: member.id_number,
-          dateOfBirth: member.date_of_birth,
+          id: member.id,
+          member_number: member.member_number,
+          first_name: member.first_name,
+          last_name: member.last_name,
+          id_number: member.id_number,
+          date_of_birth: member.date_of_birth,
           status: member.status,
-          planName: member.plan_name
-        },
-        policy: null,
-        waitingPeriods: null,
-        benefits: null
+          plan_name: member.plan_name,
+          monthly_premium: member.monthly_premium,
+          broker_code: member.broker_code,
+          start_date: member.start_date,
+          email: member.email,
+          mobile: member.mobile
+        }
       });
     }
 
-    // Calculate waiting periods
-    const waitingPeriods = calculateWaitingPeriods(member.start_date);
-
-    // Get benefit information
-    const benefits = await getBenefitInformation(
-      supabase,
-      member.id,
-      member.plan_id
-    );
-
-    // Build response
-    return NextResponse.json({
-      eligible: true,
-      message: 'Member is eligible for claims',
-      member: {
-        memberNumber: member.member_number,
-        firstName: member.first_name,
-        lastName: member.last_name,
-        idNumber: member.id_number,
-        dateOfBirth: member.date_of_birth,
-        status: member.status,
-        planName: member.plan_name
-      },
-      policy: {
-        policyNumber: member.member_number,
-        planType: (Array.isArray(member.products) ? member.products[0]?.regime : (member.products as any)?.regime) || 'Unknown',
-        planCode: (Array.isArray(member.products) ? member.products[0]?.code : (member.products as any)?.code) || 'Unknown',
-        status: member.status,
-        startDate: member.start_date,
-        brokerCode: member.broker_code,
-        monthlyPremium: member.monthly_premium
-      },
-      waitingPeriods,
-      benefits
-    });
-
-  } catch (error) {
-    console.error('Error checking eligibility:', error);
-    return NextResponse.json(
-      { 
-        error: 'Failed to check eligibility',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * Calculate waiting periods based on member start date
- */
-function calculateWaitingPeriods(startDate: string | null) {
-  if (!startDate) {
-    return {
-      general: { completed: false, daysRemaining: 90, startDate: null },
-      specialist: { completed: false, daysRemaining: 90, startDate: null },
-      hospital: { completed: false, daysRemaining: 90, startDate: null },
-      maternity: { completed: false, daysRemaining: 365, startDate: null }
-    };
-  }
-
-  const start = new Date(startDate);
-  const today = new Date();
-  const daysSinceStart = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-
-  const waitingPeriodDays = {
-    general: 90,      // 3 months
-    specialist: 90,   // 3 months
-    hospital: 90,     // 3 months
-    maternity: 365    // 12 months
-  };
-
-  return {
-    general: {
-      completed: daysSinceStart >= waitingPeriodDays.general,
-      daysRemaining: Math.max(0, waitingPeriodDays.general - daysSinceStart),
-      startDate: startDate,
-      requiredDays: waitingPeriodDays.general
-    },
-    specialist: {
-      completed: daysSinceStart >= waitingPeriodDays.specialist,
-      daysRemaining: Math.max(0, waitingPeriodDays.specialist - daysSinceStart),
-      startDate: startDate,
-      requiredDays: waitingPeriodDays.specialist
-    },
-    hospital: {
-      completed: daysSinceStart >= waitingPeriodDays.hospital,
-      daysRemaining: Math.max(0, waitingPeriodDays.hospital - daysSinceStart),
-      startDate: startDate,
-      requiredDays: waitingPeriodDays.hospital
-    },
-    maternity: {
-      completed: daysSinceStart >= waitingPeriodDays.maternity,
-      daysRemaining: Math.max(0, waitingPeriodDays.maternity - daysSinceStart),
-      startDate: startDate,
-      requiredDays: waitingPeriodDays.maternity
-    }
-  };
-}
-
-/**
- * Get benefit information including limits and usage
- */
-async function getBenefitInformation(
-  supabase: any,
-  memberId: string,
-  planId: string | null
-) {
-  const currentYear = new Date().getFullYear();
-  const benefits: any = {};
-
-  if (!planId) {
-    return benefits;
-  }
-
-  try {
-    // Get product benefits
-    const { data: productBenefits } = await supabase
-      .from('product_benefits')
+    // Fetch dependants
+    const { data: dependants } = await supabaseAdmin
+      .from('member_dependants')
       .select('*')
-      .eq('product_id', planId);
+      .eq('member_id', member.id)
+      .eq('status', 'active');
 
-    if (!productBenefits || productBenefits.length === 0) {
-      return benefits;
-    }
-
-    // Get benefit usage for current year
-    const { data: usageRecords } = await supabase
+    // Fetch benefit usage for current year
+    const currentYear = new Date().getFullYear();
+    const { data: benefitUsage } = await supabaseAdmin
       .from('benefit_usage')
       .select('*')
-      .eq('member_id', memberId)
+      .eq('member_id', member.id)
       .eq('year', currentYear);
 
-    // Create usage map for quick lookup
-    const usageMap = new Map();
-    if (usageRecords) {
-      usageRecords.forEach((usage: any) => {
-        usageMap.set(usage.benefit_type, usage);
+    // Fetch recent claims (last 6 months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    
+    const { data: recentClaims } = await supabaseAdmin
+      .from('claims')
+      .select('id, claim_number, service_date, claim_type, claimed_amount, approved_amount, status')
+      .eq('member_id', member.id)
+      .gte('service_date', sixMonthsAgo.toISOString().split('T')[0])
+      .order('service_date', { ascending: false })
+      .limit(10);
+
+    // Calculate waiting periods
+    const waitingPeriods: { [key: string]: { completed: boolean; daysRemaining: number; requiredDays: number } } = {};
+    
+    if (member.start_date) {
+      const startDate = new Date(member.start_date);
+      const today = new Date();
+      const daysSinceStart = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      // Calculate for each waiting period category
+      Object.entries(WAITING_PERIODS).forEach(([category, requiredDays]) => {
+        const completed = daysSinceStart >= requiredDays;
+        const daysRemaining = completed ? 0 : requiredDays - daysSinceStart;
+        
+        waitingPeriods[category] = {
+          completed,
+          daysRemaining,
+          requiredDays
+        };
       });
     }
 
-    // Build benefit information
-    for (const benefit of productBenefits) {
-      const usage = usageMap.get(benefit.type);
-      const limit = benefit.annual_limit || benefit.cover_amount || 0;
-      const used = usage ? (usage.used_amount || 0) : 0;
-      const usedCount = usage ? (usage.used_count || 0) : 0;
-      const remaining = limit > 0 ? Math.max(0, limit - used) : 0;
-
-      // Determine limit display
-      let limitDisplay = 'Unlimited';
-      if (limit > 0) {
-        limitDisplay = `R${limit.toLocaleString()}`;
-      } else if (benefit.total_limit_count) {
-        limitDisplay = `${benefit.total_limit_count} visits`;
-      }
-
-      // Determine remaining display
-      let remainingDisplay = 'Unlimited';
-      if (limit > 0) {
-        remainingDisplay = `R${remaining.toLocaleString()}`;
-      } else if (benefit.total_limit_count) {
-        const remainingCount = benefit.total_limit_count - usedCount;
-        remainingDisplay = `${Math.max(0, remainingCount)} visits`;
-      }
-
-      benefits[benefit.type] = {
-        name: benefit.name,
-        limit: limitDisplay,
-        limitAmount: limit,
-        used: used,
-        usedCount: usedCount,
-        remaining: remainingDisplay,
-        remainingAmount: remaining,
-        coverAmount: benefit.cover_amount || 0,
-        waitingPeriodDays: benefit.waiting_period_days || 0,
-        preExistingExclusionDays: benefit.pre_existing_exclusion_days || 0,
-        description: benefit.description,
-        lastClaimDate: usage?.last_claim_date || null,
-        usagePercentage: limit > 0 ? Math.round((used / limit) * 100) : 0
-      };
+    // Parse benefit usage to create a benefits summary
+    const benefitsSummary: { [key: string]: any } = {};
+    
+    if (benefitUsage && benefitUsage.length > 0) {
+      benefitUsage.forEach((usage: any) => {
+        const waitingPeriodCategory = BENEFIT_WAITING_PERIOD_MAP[usage.benefit_type] || 'general';
+        const waitingPeriodStatus = waitingPeriods[waitingPeriodCategory];
+        
+        benefitsSummary[usage.benefit_type] = {
+          total_limit_amount: usage.total_limit_amount,
+          total_limit_count: usage.total_limit_count,
+          used_amount: usage.used_amount || 0,
+          used_count: usage.used_count || 0,
+          remaining_amount: usage.remaining_amount,
+          remaining_count: usage.remaining_count,
+          waiting_period: waitingPeriodStatus || { completed: false, daysRemaining: 0, requiredDays: 0 }
+        };
+      });
     }
 
-    return benefits;
-  } catch (error) {
-    console.error('Error fetching benefit information:', error);
-    return benefits;
+    return NextResponse.json({
+      eligible: true,
+      message: 'Member is eligible for services',
+      member: {
+        id: member.id,
+        member_number: member.member_number,
+        first_name: member.first_name,
+        last_name: member.last_name,
+        id_number: member.id_number,
+        date_of_birth: member.date_of_birth,
+        status: member.status,
+        plan_name: member.plan_name,
+        monthly_premium: member.monthly_premium,
+        broker_code: member.broker_code,
+        start_date: member.start_date,
+        email: member.email,
+        mobile: member.mobile,
+        dependants: dependants || [],
+        benefit_usage: benefitUsage || [],
+        benefits_summary: benefitsSummary,
+        waiting_periods: waitingPeriods,
+        recent_claims: recentClaims || []
+      }
+    });
+
+  } catch (error: any) {
+    console.error('Error checking eligibility:', error);
+    return NextResponse.json(
+      { error: 'Internal server error', details: error.message },
+      { status: 500 }
+    );
   }
 }

@@ -281,7 +281,15 @@ export default function Step1Personal({ data, updateData, nextStep }: Props) {
     
     // Save lead to database immediately after Step 1
     try {
-      await fetch('/api/leads', {
+      console.log('🚀 Calling /api/leads with:', {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        mobile: formData.mobile,
+        idNumber: formData.idNumber,
+      })
+      
+      const response = await fetch('/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -300,10 +308,20 @@ export default function Step1Personal({ data, updateData, nextStep }: Props) {
           lifecycleStage: 'application_started',
         }),
       })
-      // Continue to next step even if save fails (don't block user)
+      
+      const result = await response.json()
+      console.log('✅ /api/leads response:', result)
+      
+      if (!response.ok) {
+        console.error('❌ /api/leads failed:', result)
+        alert('Failed to save your information. Please try again.')
+        return
+      }
+      
     } catch (error) {
-      console.error('Failed to save lead:', error)
-      // Continue anyway
+      console.error('❌ Failed to save lead:', error)
+      alert('Failed to save your information. Please try again.')
+      return
     }
     
     nextStep()

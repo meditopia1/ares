@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { Collapse, CollapseGroup } from '@/components/ui/collapse';
+import { authFetch } from '@/lib/auth-fetch';
+import { useAuth } from '@/contexts/auth-context';
 
 interface Member {
   id: string;
@@ -42,6 +44,9 @@ export default function OperationsMemberDetailPage() {
   const router = useRouter();
   const params = useParams();
   const memberId = params.id as string;
+  const { user } = useAuth();
+  const isFinanceViewer = user?.roles?.includes('finance_manager') ?? false;
+  const canEdit = !isFinanceViewer;
   
   const [member, setMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,7 +65,7 @@ export default function OperationsMemberDetailPage() {
 
   const handleSaveEdit = async () => {
     try {
-      const response = await fetch(`/api/admin/members/${memberId}`, {
+      const response = await authFetch(`/api/operations/members/${memberId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editedData),
@@ -88,10 +93,12 @@ export default function OperationsMemberDetailPage() {
   const fetchMemberDetails = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/admin/members/${memberId}`);
+      const response = await authFetch(`/api/operations/members/${memberId}`);
       if (response.ok) {
         const data = await response.json();
         setMember(data);
+      } else if (response.status === 401) {
+        console.warn('Unauthorized member details request');
       }
     } catch (error) {
       console.error('Failed to fetch member details:', error);
@@ -161,6 +168,11 @@ export default function OperationsMemberDetailPage() {
               <p className="text-gray-600 mt-1">Member #{member.memberNumber}</p>
             </div>
           </div>
+          {isFinanceViewer && (
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+              Finance read-only view
+            </span>
+          )}
         </div>
 
         {/* Status Cards */}
@@ -198,7 +210,12 @@ export default function OperationsMemberDetailPage() {
             <Card>
               <CardContent className="p-0">
                 <CollapseGroup>
-                  <Collapse title="Personal Information" size="small" showEdit onEdit={() => handleEditSection('personal')}>
+                  <Collapse
+                    title="Personal Information"
+                    size="small"
+                    showEdit={canEdit}
+                    onEdit={canEdit ? () => handleEditSection('personal') : undefined}
+                  >
                     {editingSection === 'personal' ? (
                       <div className="space-y-3 text-sm">
                         <div>
@@ -284,7 +301,12 @@ export default function OperationsMemberDetailPage() {
                     )}
                   </Collapse>
 
-                  <Collapse title="Contact Information" size="small" showEdit onEdit={() => handleEditSection('contact')}>
+                  <Collapse
+                    title="Contact Information"
+                    size="small"
+                    showEdit={canEdit}
+                    onEdit={canEdit ? () => handleEditSection('contact') : undefined}
+                  >
                     {editingSection === 'contact' ? (
                       <div className="space-y-3 text-sm">
                         <div>
@@ -400,7 +422,12 @@ export default function OperationsMemberDetailPage() {
                     </div>
                   </Collapse>
 
-                  <Collapse title="Banking Details" size="small" showEdit onEdit={() => handleEditSection('banking')}>
+                  <Collapse
+                    title="Banking Details"
+                    size="small"
+                    showEdit={canEdit}
+                    onEdit={canEdit ? () => handleEditSection('banking') : undefined}
+                  >
                     {editingSection === 'banking' ? (
                       <div className="space-y-3 text-sm">
                         <div>

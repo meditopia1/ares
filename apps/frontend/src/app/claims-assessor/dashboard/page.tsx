@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
+import { InlinePageLoading } from '@/components/layout/page-loading';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { authFetch } from '@/lib/auth-fetch';
 import { FileText, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 
 export default function ClaimsAssessorDashboardPage() {
@@ -36,14 +38,28 @@ export default function ClaimsAssessorDashboardPage() {
     try {
       setLoadingData(true);
       const [statsRes, claimsRes] = await Promise.all([
-        fetch('/api/claims-assessor/dashboard'),
-        fetch('/api/claims-assessor/claims?limit=5')
+        authFetch('/api/claims-assessor/dashboard'),
+        authFetch('/api/claims-assessor/claims?limit=5')
       ]);
       
       const statsData = await statsRes.json();
       const claimsData = await claimsRes.json();
+
+      if (!statsRes.ok) {
+        throw new Error(statsData?.error || 'Failed to load dashboard stats');
+      }
+
+      if (!claimsRes.ok) {
+        throw new Error(claimsData?.error || 'Failed to load recent claims');
+      }
       
-      setStats(statsData);
+      setStats({
+        pendingClaims: statsData.stats?.pending_review ?? 0,
+        preauthRequests: statsData.stats?.preauth_requests ?? 0,
+        fraudCases: statsData.stats?.fraud_alerts ?? 0,
+        approvedToday: statsData.stats?.approved_today ?? statsData.stats?.approved_claims ?? 0,
+        approvedTodayAmount: statsData.stats?.approved_today_amount ?? statsData.stats?.total_approved ?? 0,
+      });
       setRecentClaims(claimsData.claims || []);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -52,15 +68,14 @@ export default function ClaimsAssessorDashboardPage() {
     }
   };
 
-  if (loading || loadingData) {
+  if (loading) {
     return (
       <SidebarLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading dashboard...</p>
-          </div>
-        </div>
+        <InlinePageLoading
+          title="Claims Dashboard"
+          description="Preparing claims operations"
+          message="Loading claims workspace..."
+        />
       </SidebarLayout>
     );
   }
@@ -69,12 +84,24 @@ export default function ClaimsAssessorDashboardPage() {
     return null;
   }
 
+  if (loadingData) {
+    return (
+      <SidebarLayout>
+        <InlinePageLoading
+          title="Claims Dashboard"
+          description={`Welcome back, ${user?.firstName ?? 'Claims Team'}! Here's your claims overview`}
+          message="Loading claims, pre-auth, and fraud metrics..."
+        />
+      </SidebarLayout>
+    );
+  }
+
   return (
     <SidebarLayout>
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Claims Assessor Dashboard</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Claims Dashboard</h1>
           <p className="text-gray-600 mt-1">Welcome back, {user?.firstName}! Here's your claims overview</p>
         </div>
 
@@ -167,7 +194,7 @@ export default function ClaimsAssessorDashboardPage() {
                 <div>
                   <p className="text-sm text-gray-600">Approved Today</p>
                   <p className="text-3xl font-bold mt-1 text-green-600">{stats.approvedToday}</p>
-                  <p className="text-xs text-gray-600 mt-1">R {stats.approvedTodayAmount.toLocaleString()} total</p>
+                  <p className="text-xs text-gray-600 mt-1">R {Number(stats.approvedTodayAmount || 0).toLocaleString()} total</p>
                 </div>
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                   <CheckCircle className="w-6 h-6 text-green-600" />
@@ -185,7 +212,7 @@ export default function ClaimsAssessorDashboardPage() {
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <button 
-                onClick={() => router.push('/claims-assessor/queue')}
+                onClick={() => router.push('/claims/queue')}
                 className="p-4 border rounded-lg hover:bg-green-50 hover:border-green-300 transition-colors text-left group"
               >
                 <div className="w-10 h-10 bg-green-100 group-hover:bg-green-200 rounded-lg flex items-center justify-center mb-2 transition-colors">
@@ -196,7 +223,7 @@ export default function ClaimsAssessorDashboardPage() {
               </button>
 
               <button 
-                onClick={() => router.push('/claims-assessor/preauth')}
+                onClick={() => router.push('/claims/preauth')}
                 className="p-4 border rounded-lg hover:bg-green-50 hover:border-green-300 transition-colors text-left group"
               >
                 <div className="w-10 h-10 bg-green-100 group-hover:bg-green-200 rounded-lg flex items-center justify-center mb-2 transition-colors">
@@ -207,7 +234,7 @@ export default function ClaimsAssessorDashboardPage() {
               </button>
 
               <button 
-                onClick={() => router.push('/claims-assessor/fraud')}
+                onClick={() => router.push('/claims/fraud')}
                 className="p-4 border rounded-lg hover:bg-green-50 hover:border-green-300 transition-colors text-left group"
               >
                 <div className="w-10 h-10 bg-green-100 group-hover:bg-green-200 rounded-lg flex items-center justify-center mb-2 transition-colors">

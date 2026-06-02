@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, FileText, CreditCard, Activity, Trash2 } from 'lucide-react';
 import { Collapse, CollapseGroup } from '@/components/ui/collapse';
+import { authFetch } from '@/lib/auth-fetch';
 
 interface Member {
   id: string;
@@ -63,7 +64,7 @@ export default function MemberDetailPage() {
 
   const handleSaveEdit = async () => {
     try {
-      const response = await fetch(`/api/admin/members/${memberId}`, {
+      const response = await authFetch(`/api/admin/members/${memberId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editedData),
@@ -91,7 +92,7 @@ export default function MemberDetailPage() {
 
     try {
       setIsDeleting(true);
-      const response = await fetch(`/api/admin/members/${memberId}`, {
+      const response = await authFetch(`/api/admin/members/${memberId}`, {
         method: 'DELETE',
       });
 
@@ -119,7 +120,7 @@ export default function MemberDetailPage() {
   const fetchMemberDetails = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/admin/members/${memberId}`);
+      const response = await authFetch(`/api/admin/members/${memberId}`);
       if (response.ok) {
         const data = await response.json();
         setMember(data);

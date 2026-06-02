@@ -208,7 +208,10 @@ export default function FeedbackManagementPage() {
               </CardHeader>
               <CardContent>
                 {loading ? (
-                  <div className="text-center py-8 text-gray-600">Loading...</div>
+                  <div className="text-center py-8 text-gray-600">
+                    <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-purple-600" />
+                    <p className="mt-3 text-sm">Loading feedback...</p>
+                  </div>
                 ) : feedback.length === 0 ? (
                   <div className="text-center py-8 text-gray-600">No feedback found</div>
                 ) : (

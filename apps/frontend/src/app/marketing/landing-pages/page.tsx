@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { authFetch } from '@/lib/auth-fetch';
 import { 
   Layout, 
   Eye, 
@@ -53,7 +54,7 @@ export default function LandingPagesPage() {
     try {
       setLoading(true);
       
-      const response = await fetch('/api/marketing/landing-pages');
+      const response = await authFetch('/api/marketing/landing-pages');
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));

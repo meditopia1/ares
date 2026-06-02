@@ -8,39 +8,36 @@ export async function POST(request: NextRequest) {
     const supabaseAdmin = createServerSupabaseClient()
     const data = await request.json()
     
-    // Check if contact already exists
-    const { data: existingContact } = await supabaseAdmin
+    // Check if contact already exists by email OR id_number (both have unique constraints)
+    const { data: existingContacts } = await supabaseAdmin
       .from('contacts')
-      .select('id, lifecycle_stage')
-      .eq('email', data.email)
-      .single()
+      .select('id, email, id_number')
+      .or(`email.eq.${data.email},id_number.eq.${data.idNumber}`)
 
     let contactId: string
 
-    if (existingContact) {
-      // Only update if they're still a lead (not already an applicant/member)
-      if (existingContact.lifecycle_stage === 'new' || existingContact.lifecycle_stage === 'application_started') {
-        const { data: updatedContact, error: updateError } = await supabaseAdmin
-          .from('contacts')
-          .update({
-            first_name: data.firstName,
-            last_name: data.lastName,
-            mobile: data.mobile,
-            id_number: data.idNumber,
-            is_lead: true,
-            is_applicant: true,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existingContact.id)
-          .select()
-          .single()
+    if (existingContacts && existingContacts.length > 0) {
+      // Use the first matching contact
+      const existingContact = existingContacts[0]
+      
+      // Update existing contact with latest information
+      const { data: updatedContact, error: updateError } = await supabaseAdmin
+        .from('contacts')
+        .update({
+          first_name: data.firstName,
+          last_name: data.lastName,
+          email: data.email,
+          mobile: data.mobile,
+          id_number: data.idNumber,
+          is_lead: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existingContact.id)
+        .select()
+        .single()
 
-        if (updateError) throw updateError
-        contactId = updatedContact.id
-      } else {
-        // Don't overwrite existing applicant/member data
-        contactId = existingContact.id
-      }
+      if (updateError) throw updateError
+      contactId = updatedContact.id
     } else {
       // Create new contact/lead
       const { data: newContact, error: createError } = await supabaseAdmin
@@ -52,7 +49,6 @@ export async function POST(request: NextRequest) {
           mobile: data.mobile,
           id_number: data.idNumber,
           is_lead: true,
-          is_applicant: true,
           source: data.source || 'website_application',
         })
         .select()

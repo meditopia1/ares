@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAnyRole } from '@/lib/auth-server';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -109,6 +110,8 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    const user = await requireAnyRole(request, ['claims', 'admin', 'system_admin']);
+    
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const body = await request.json();
     const claimId = params.id;
@@ -121,8 +124,7 @@ export async function PATCH(
       rejection_code,
       rejection_reason,
       pended_reason,
-      additional_info_requested,
-      assessor_id // TODO: Get from auth session
+      additional_info_requested
     } = body;
 
     // Validate action
@@ -182,7 +184,7 @@ export async function PATCH(
         status: 'approved',
         approved_amount: approved_amount,
         approved_at: now,
-        approved_by: assessor_id || null,
+        approved_by: user.id,
         // Store calculation details in claim_data
         claim_data: {
           ...claim.claim_data,
@@ -255,7 +257,7 @@ export async function PATCH(
     const auditData = {
       claim_id: claimId,
       action: action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'pended',
-      performed_by: assessor_id || null,
+      performed_by: user.id,
       previous_status: claim.status,
       new_status: updateData.status,
       notes: action === 'approve' 

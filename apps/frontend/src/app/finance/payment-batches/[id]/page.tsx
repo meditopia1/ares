@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Download, CheckCircle, XCircle, Clock, FileText, User, Building2, Calendar, DollarSign } from 'lucide-react';
 import { formatCurrency, getBatchStatusColor, getPaymentStatusColor } from '@/lib/payment-processing';
+import { authFetch } from '@/lib/auth-fetch';
 
 interface Payment {
   id: string;
@@ -76,7 +77,7 @@ export default function BatchDetailsPage() {
   const fetchBatchDetails = async () => {
     try {
       setLoadingBatch(true);
-      const response = await fetch(`/api/finance/payment-batches/${batchId}`);
+      const response = await authFetch(`/api/finance/payment-batches/${batchId}`);
       const data = await response.json();
       
       if (!response.ok) {
@@ -104,7 +105,7 @@ export default function BatchDetailsPage() {
 
     try {
       setActionLoading(true);
-      const response = await fetch(`/api/finance/payment-batches/${batchId}`, {
+      const response = await authFetch(`/api/finance/payment-batches/${batchId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action })
@@ -131,7 +132,7 @@ export default function BatchDetailsPage() {
 
     try {
       setActionLoading(true);
-      const response = await fetch(`/api/finance/payment-batches/${batchId}`, {
+      const response = await authFetch(`/api/finance/payment-batches/${batchId}`, {
         method: 'DELETE'
       });
 

@@ -4,11 +4,14 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
+import { InlinePageLoading } from '@/components/layout/page-loading';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { authFetch } from '@/lib/auth-fetch';
 
 interface Claim {
+  id: string;
   claimNumber: string;
   patientName: string;
   memberNumber: string;
@@ -33,31 +36,31 @@ export default function ClaimsHistoryPage() {
   const [stats, setStats] = useState<any>(null);
   const [loadingClaims, setLoadingClaims] = useState(true);
 
-  // TODO: Get provider_id from authenticated session
-  const providerId = 'temp-provider-id'; // Replace with actual provider ID from auth
-
   useEffect(() => {
-    fetchClaims();
-  }, [statusFilter, dateFrom, dateTo, searchTerm]);
+    if (isAuthenticated && user) {
+      fetchClaims();
+    }
+  }, [isAuthenticated, user, statusFilter, dateFrom, dateTo, searchTerm]);
 
   const fetchClaims = async () => {
+    if (!user) return;
+
     try {
       setLoadingClaims(true);
-      const params = new URLSearchParams({
-        provider_id: providerId
-      });
+      const params = new URLSearchParams();
       
       if (statusFilter) params.append('status', statusFilter);
       if (dateFrom) params.append('date_from', dateFrom);
       if (dateTo) params.append('date_to', dateTo);
       if (searchTerm) params.append('search', searchTerm);
 
-      const response = await fetch(`/api/provider/claims?${params}`);
+      const response = await authFetch(`/api/provider/claims?${params}`);
       if (response.ok) {
         const data = await response.json();
         
         // Transform data to match component interface
         const transformedClaims = (data.claims || []).map((claim: any) => ({
+          id: claim.id,
           claimNumber: claim.claim_number,
           patientName: claim.members ? `${claim.members.first_name} ${claim.members.last_name}` : 'Unknown',
           memberNumber: claim.members?.member_number || 'N/A',
@@ -83,6 +86,7 @@ export default function ClaimsHistoryPage() {
   // Mock data for fallback (remove this once API is working)
   const [mockClaims] = useState<Claim[]>([
     {
+      id: 'mock-1',
       claimNumber: 'CLM-20240110-001234',
       patientName: 'John Smith',
       memberNumber: 'M-2024-5678',
@@ -95,6 +99,7 @@ export default function ClaimsHistoryPage() {
       statusDate: '2024-01-11',
     },
     {
+      id: 'mock-2',
       claimNumber: 'CLM-20240109-001189',
       patientName: 'Jane Doe',
       memberNumber: 'M-2024-3421',
@@ -107,6 +112,7 @@ export default function ClaimsHistoryPage() {
       statusDate: '2024-01-10',
     },
     {
+      id: 'mock-3',
       claimNumber: 'CLM-20240108-001156',
       patientName: 'Bob Johnson',
       memberNumber: 'M-2024-7890',
@@ -119,6 +125,7 @@ export default function ClaimsHistoryPage() {
       statusDate: '2024-01-08',
     },
     {
+      id: 'mock-4',
       claimNumber: 'CLM-20240107-001123',
       patientName: 'Alice Williams',
       memberNumber: 'M-2024-4567',
@@ -131,6 +138,7 @@ export default function ClaimsHistoryPage() {
       statusDate: '2024-01-09',
     },
     {
+      id: 'mock-5',
       claimNumber: 'CLM-20240106-001098',
       patientName: 'Charlie Brown',
       memberNumber: 'M-2024-2345',
@@ -143,6 +151,7 @@ export default function ClaimsHistoryPage() {
       statusDate: '2024-01-08',
     },
     {
+      id: 'mock-6',
       claimNumber: 'CLM-20240105-001067',
       patientName: 'Diana Prince',
       memberNumber: 'M-2024-6789',
@@ -164,9 +173,13 @@ export default function ClaimsHistoryPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
+      <SidebarLayout>
+        <InlinePageLoading
+          title="Claims History"
+          description="Review submitted claims and their statuses"
+          message="Opening claims history..."
+        />
+      </SidebarLayout>
     );
   }
 
@@ -380,7 +393,7 @@ export default function ClaimsHistoryPage() {
                       </tr>
                     ) : (
                       claims.map((claim) => (
-                        <tr key={claim.claimNumber} className="border-b hover:bg-gray-50">
+                        <tr key={claim.id} className="border-b hover:bg-gray-50">
                           <td className="py-3 px-4">
                             <p className="font-mono text-sm">{claim.claimNumber}</p>
                             <p className="text-xs text-gray-500">
@@ -412,7 +425,7 @@ export default function ClaimsHistoryPage() {
                             <Button 
                               variant="outline" 
                               size="sm"
-                              onClick={() => router.push(`/claims/${claim.claimNumber}`)}
+                              onClick={() => router.push(`/claims/${claim.id}`)}
                             >
                               View Details
                             </Button>

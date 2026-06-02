@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAnyRole } from '@/lib/auth-server';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -7,10 +8,12 @@ const supabase = createClient(
 );
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    await requireAnyRole(request, ['admin', 'system_admin', 'operations_manager']);
+    
     const { data: provider, error } = await supabase
       .from('providers')
       .select('*')
@@ -37,10 +40,12 @@ export async function GET(
 }
 
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    await requireAnyRole(request, ['admin', 'system_admin']);
+    
     const body = await request.json();
     const { login_email, login_password, ...updateData } = body;
 
@@ -118,14 +123,13 @@ export async function PUT(
       }
     }
 
-    // Update provider record
+    // Update provider record (password only in Supabase Auth, never in providers table)
     const { error } = await supabase
       .from('providers')
       .update({
         ...updateData,
         user_id: userId,
         login_email: login_email || null,
-        login_password: login_password || null,
       })
       .eq('id', params.id);
 
@@ -142,23 +146,14 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  try {
-    const { error } = await supabase
-      .from('providers')
-      .delete()
-      .eq('id', params.id);
-
-    if (error) throw error;
-
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error('Error deleting provider:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete provider' },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(
+    {
+      error: 'Provider deletion is disabled. Use inactive/archived status instead.',
+      code: 'DELETE_DISABLED'
+    },
+    { status: 403 }
+  );
 }

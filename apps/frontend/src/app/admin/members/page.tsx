@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
+import { PageLoading } from '@/components/layout/page-loading';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EditMemberPlanModal } from '@/components/admin/edit-member-plan-modal';
+import { authFetch } from '@/lib/auth-fetch';
 
 interface Member {
   id: string;
@@ -122,7 +124,7 @@ export default function AdminMembersPage() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/admin/members?stats_only=true', {
+      const response = await authFetch('/api/admin/members?stats_only=true', {
         cache: 'no-store',
       });
       const data = await response.json();
@@ -136,7 +138,7 @@ export default function AdminMembersPage() {
 
   const fetchFilterOptions = async () => {
     try {
-      const response = await fetch('/api/admin/members?filters_only=true', {
+      const response = await authFetch('/api/admin/members?filters_only=true', {
         cache: 'no-store',
       });
       const data = await response.json();
@@ -167,8 +169,8 @@ export default function AdminMembersPage() {
       if (paymentMethodFilter && paymentMethodFilter !== '') params.append('payment_method', paymentMethodFilter);
       if (searchTerm) params.append('search', searchTerm);
       params.append('include_dependants', 'true');
-      
-      const response = await fetch(`/api/admin/members?${params.toString()}`, {
+
+      const response = await authFetch(`/api/admin/members?${params.toString()}`, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache',
@@ -270,14 +272,7 @@ export default function AdminMembersPage() {
   // }, [loading, isAuthenticated, router]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <PageLoading message="Loading members..." />;
   }
 
   if (!user) {

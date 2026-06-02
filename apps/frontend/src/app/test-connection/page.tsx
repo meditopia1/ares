@@ -24,10 +24,10 @@ export default function TestConnectionPage() {
         return;
       }
 
-      // Test 2: Try to query a simple table (users)
+      // Test 2: Try to query a simple table exposed in the app schema
       const { data, error, count } = await supabase
-        .from('users')
-        .select('id, email', { count: 'exact' })
+        .from('members')
+        .select('id, member_number', { count: 'exact' })
         .limit(5);
 
       if (error) {
@@ -37,7 +37,7 @@ export default function TestConnectionPage() {
       }
 
       setStatus('success');
-      setMessage(`Successfully connected to Supabase! Found ${count || 0} users in database.`);
+      setMessage(`Successfully connected to Supabase! Found ${count || 0} members in database.`);
       setTables(data || []);
     } catch (err: any) {
       setStatus('error');
@@ -73,10 +73,10 @@ export default function TestConnectionPage() {
 
         {tables.length > 0 && (
           <div>
-            <p className="text-sm font-semibold mb-2">Sample users:</p>
+            <p className="text-sm font-semibold mb-2">Sample members:</p>
             <ul className="list-disc list-inside">
-              {tables.map((user: any, idx) => (
-                <li key={idx} className="text-sm">{user.email || user.id}</li>
+              {tables.map((member: any, idx) => (
+                <li key={idx} className="text-sm">{member.member_number || member.id}</li>
               ))}
             </ul>
           </div>

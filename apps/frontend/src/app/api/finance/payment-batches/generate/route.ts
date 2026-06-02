@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { generateBatchNumber, groupClaimsByPayee, calculatePaymentTotal, validateBankingDetails } from '@/lib/payment-processing';
+import { requireAnyRole } from '@/lib/auth-server';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await requireAnyRole(request, ['finance_manager', 'admin', 'system_admin']);
+    
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const body = await request.json();
 
@@ -15,8 +18,7 @@ export async function POST(request: NextRequest) {
       payment_method = 'eft',
       claim_ids, // Optional: specific claims to include
       date_from, // Optional: filter by approval date
-      date_to,
-      created_by // TODO: Get from auth session
+      date_to
     } = body;
 
     // Validate batch type
@@ -162,7 +164,7 @@ export async function POST(request: NextRequest) {
         total_amount: totalAmount,
         status: 'draft',
         payment_method,
-        created_by
+        created_by: user.id
       })
       .select()
       .single();
@@ -186,7 +188,7 @@ export async function POST(request: NextRequest) {
       payment_amount: payment.payment_amount,
       payment_method,
       payment_status: 'pending',
-      created_by
+      created_by: user.id
     }));
 
     const { data: createdPayments, error: paymentsError } = await supabase

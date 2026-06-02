@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAnyRole } from '@/lib/auth-server';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,6 +9,8 @@ const supabase = createClient(
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAnyRole(request, ['operations_manager', 'finance_manager', 'admin', 'system_admin']);
+    
     const { searchParams } = new URL(request.url);
     const strikeDate = searchParams.get('strike_date');
 

@@ -6,6 +6,8 @@ import { SidebarLayout } from '@/components/layout/sidebar-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { authFetch } from '@/lib/auth-fetch';
+import { useAuth } from '@/contexts/auth-context';
 
 interface Member {
   id: string;
@@ -40,6 +42,8 @@ interface FilterOptions {
 
 export default function OperationsMembersPage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const isFinanceViewer = user?.roles?.includes('finance_manager') ?? false;
   const [searchTerm, setSearchTerm] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -66,16 +70,17 @@ export default function OperationsMembersPage() {
 
   // Fetch stats on mount
   useEffect(() => {
+    if (authLoading || !user) return;
     if (!statsLoaded) {
       fetchStats();
     }
     // Fetch filter options on mount
     fetchFilterOptions();
-  }, []);
+  }, [authLoading, statsLoaded, user?.id]);
 
   const fetchFilterOptions = async () => {
     try {
-      const response = await fetch('/api/admin/members?filters_only=true', {
+      const response = await authFetch('/api/operations/members?filters_only=true', {
         cache: 'no-store',
       });
       const data = await response.json();
@@ -89,7 +94,7 @@ export default function OperationsMembersPage() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/admin/members?stats_only=true', {
+      const response = await authFetch('/api/operations/members?stats_only=true', {
         cache: 'no-store',
       });
       const data = await response.json();
@@ -103,6 +108,7 @@ export default function OperationsMembersPage() {
   };
 
   useEffect(() => {
+    if (authLoading || !user) return;
     // Restore search state from sessionStorage on mount
     const savedState = sessionStorage.getItem('memberSearchState');
     if (savedState) {
@@ -114,21 +120,37 @@ export default function OperationsMembersPage() {
         setBrokerFilter(state.brokerFilter || '');
         setPlanFilter(state.planFilter || '');
         setPaymentMethodFilter(state.paymentMethodFilter || '');
+        setHasSearched(true);
       } catch (e) {
         console.error('Failed to restore search state:', e);
+        setHasSearched(true);
       }
     } else {
-      // No saved state, set loading to false immediately
-      setDataLoading(false);
+      // No saved state, load the default member list immediately
+      setHasSearched(true);
     }
-  }, []);
+  }, [authLoading, user?.id]);
 
   useEffect(() => {
+    if (authLoading || !user) return;
     // Always fetch members when search term or filters change AND user has searched
     if (hasSearched) {
       fetchMembers();
     }
-  }, [statusFilter, brokerFilter, planFilter, paymentMethodFilter, searchTerm, hasSearched]);
+  }, [authLoading, user?.id, statusFilter, brokerFilter, planFilter, paymentMethodFilter, searchTerm, hasSearched]);
+
+  if (authLoading) {
+    return (
+      <SidebarLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 text-sm">Loading members...</p>
+          </div>
+        </div>
+      </SidebarLayout>
+    );
+  }
 
   const fetchMembers = async () => {
     try {
@@ -143,9 +165,9 @@ export default function OperationsMembersPage() {
       if (searchTerm) params.append('search', searchTerm);
       params.append('include_dependants', 'true'); // Always include dependants
       
-      console.log('API URL:', `/api/admin/members?${params.toString()}`);
+      console.log('API URL:', `/api/operations/members?${params.toString()}`);
       
-      const response = await fetch(`/api/admin/members?${params.toString()}`, {
+      const response = await authFetch(`/api/operations/members?${params.toString()}`, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache',
@@ -212,6 +234,11 @@ export default function OperationsMembersPage() {
             <h1 className="text-3xl font-bold text-gray-900">Manage Members</h1>
             <p className="text-gray-600 mt-1">View and manage member records</p>
           </div>
+          {isFinanceViewer && (
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+              Finance read-only view
+            </span>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -273,6 +300,12 @@ export default function OperationsMembersPage() {
                       onClick={() => {
                         setSearchInput('');
                         setSearchTerm('');
+                        setStatusFilter('');
+                        setBrokerFilter('');
+                        setPlanFilter('');
+                        setPaymentMethodFilter('');
+                        setHasSearched(true);
+                        sessionStorage.removeItem('memberSearchState');
                       }} 
                       variant="outline" 
                       size="sm" 
@@ -295,10 +328,14 @@ export default function OperationsMembersPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="">Click to select</option>
-                  <option value="active">Active</option>
-                  <option value="pending">Pending</option>
-                  <option value="suspended">Suspended</option>
-                  <option value="in_waiting">In Waiting</option>
+                  {filterOptions.statuses.map(status => (
+                    <option key={status} value={status}>
+                      {status
+                        .split('_')
+                        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+                        .join(' ')}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="space-y-2">
@@ -368,9 +405,11 @@ export default function OperationsMembersPage() {
                 <CardDescription>Showing {filteredMembers.length} of {totalCount} members</CardDescription>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => router.push('/admin/data-import')}>
-                  Bulk Upload
-                </Button>
+                {!isFinanceViewer && (
+                  <Button variant="outline" size="sm" onClick={() => router.push('/admin/data-import')}>
+                    Bulk Upload
+                  </Button>
+                )}
                 <Button variant="outline" size="sm">Export to CSV</Button>
               </div>
             </div>

@@ -13,7 +13,8 @@ The Provider Claims System enables healthcare providers to submit claims, verify
 
 **Current Status:** 95% complete - Core functionality implemented  
 **Priority:** CRITICAL - Core business functionality  
-**Remaining Work:** Pre-authorization system, notifications, multi-line claims
+**Remaining Work:** Multi-line claims (5%)  
+**Progress Tracking:** See `.kiro/steering/progress.md` for detailed status and next tasks
 
 ## System Architecture
 
@@ -1178,53 +1179,55 @@ async function detectFraud(claim) {
 
 ### High Priority (Remaining Work)
 
-1. ~~**Create benefit_usage table and integrate with adjudication**~~ ✅ COMPLETE
+**NOTE:** For current system status and completion tracking, see `.kiro/steering/progress.md`
+
+1. ~~**Create benefit_usage table and integrate with adjudication**~~ ✅ COMPLETE (April 16, 2026)
    - ✅ Track annual benefit usage per member
    - ✅ Validate claims against remaining benefits
    - ✅ Update usage on claim approval
    - ✅ Reset usage annually
    - ✅ Auto-initialize on member approval
 
-2. ~~**Implement eligibility verification API**~~ ✅ COMPLETE
+2. ~~**Implement eligibility verification API**~~ ✅ COMPLETE (April 16, 2026)
    - ✅ Real-time member eligibility check
    - ✅ Benefit limits and usage display
    - ✅ Waiting period calculation
    - ✅ Provider-facing UI integration
 
-3. **Complete waiting period validation**
-   - Calculate waiting periods from member start_date
-   - Integrate with auto-approval rules
-   - Display waiting period status in eligibility check
+3. ~~**Complete waiting period validation**~~ ✅ COMPLETE (April 22, 2026)
+   - ✅ Calculate waiting periods from member start_date
+   - ✅ Integrate with auto-approval rules
+   - ✅ Display waiting period status in eligibility check
 
-4. **Implement notifications system**
-   - Email notifications for claim status changes
-   - SMS notifications for approvals/rejections
-   - Provider notifications for payment status
-   - Member notifications for claim updates
+4. ~~**Implement notifications system**~~ ✅ COMPLETE (April 22, 2026)
+   - ✅ Email notifications for claim status changes
+   - ✅ SMS notifications for approvals/rejections
+   - ✅ Provider notifications for payment status
+   - ✅ Member notifications for claim updates
 
-5. **Add user authentication to APIs**
-   - Get member_id/provider_id from session
-   - Implement proper authorization checks
-   - Add role-based access control
+5. ~~**Add user authentication to APIs**~~ ✅ COMPLETE (April 22, 2026)
+   - ✅ Get member_id/provider_id from session
+   - ✅ Implement proper authorization checks
+   - ✅ Add role-based access control
+
+6. ~~**Create pre-authorization system**~~ ✅ COMPLETE (April 16, 2026)
+   - ✅ Pre-auth submission workflow
+   - ✅ Pre-auth approval process
+   - ✅ Link pre-auth to claims
+   - ✅ Pre-auth tracking dashboard
 
 ### Medium Priority
 
-6. **Create pre-authorization system**
-   - Pre-auth submission workflow
-   - Pre-auth approval process
-   - Link pre-auth to claims
-   - Pre-auth tracking dashboard
+7. **Add claim_lines table support** (5% remaining for claims system)
+   - Multi-line claim submission
+   - Line-by-line adjudication
+   - Partial approvals
 
-7. **Enhance fraud detection**
+8. **Enhance fraud detection**
    - Advanced pattern detection
    - Machine learning integration
    - Provider risk profiling
    - Member claim pattern analysis
-
-8. **Add claim_lines table support**
-   - Multi-line claim submission
-   - Line-by-line adjudication
-   - Partial approvals
 
 9. **Build analytics dashboards**
    - Claims volume trends

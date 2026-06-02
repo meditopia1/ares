@@ -56,7 +56,7 @@ export async function GET() {
           action: 'Claim Approved',
           description: `${claim.claim_number} - R${parseFloat(claim.claimed_amount).toLocaleString()}`,
           timestamp: claim.approved_at,
-          user: 'Claims Assessor',
+          user: 'Claims',
         });
       });
     }

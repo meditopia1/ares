@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { authFetch } from '@/lib/auth-fetch';
 
 interface Props {
   benefitId: string;
@@ -68,11 +69,9 @@ export function ComprehensiveBenefitPanel({ benefitId, benefitName }: Props) {
   const addNetworkProvider = async () => {
     if (!newProvider.name || !newProvider.type) return;
     try {
-      const token = localStorage.getItem('token');
-      await fetch(`/api/admin/benefits/${benefitId}/network-providers`, {
+      await authFetch(`/api/admin/benefits/${benefitId}/network-providers`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(newProvider),
@@ -86,10 +85,8 @@ export function ComprehensiveBenefitPanel({ benefitId, benefitName }: Props) {
 
   const deleteNetworkProvider = async (providerId: string) => {
     try {
-      const token = localStorage.getItem('token');
-      await fetch(`/api/admin/benefits/network-providers/${providerId}`, {
+      await authFetch(`/api/admin/benefits/network-providers/${providerId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
       });
       fetchAllData();
     } catch (error) {
@@ -100,11 +97,9 @@ export function ComprehensiveBenefitPanel({ benefitId, benefitName }: Props) {
   const addProcedureCode = async () => {
     if (!newCode.code || !newCode.type) return;
     try {
-      const token = localStorage.getItem('token');
-      await fetch(`/api/admin/benefits/${benefitId}/procedure-codes`, {
+      await authFetch(`/api/admin/benefits/${benefitId}/procedure-codes`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(newCode),
@@ -118,10 +113,8 @@ export function ComprehensiveBenefitPanel({ benefitId, benefitName }: Props) {
 
   const deleteProcedureCode = async (codeId: string) => {
     try {
-      const token = localStorage.getItem('token');
-      await fetch(`/api/admin/benefits/procedure-codes/${codeId}`, {
+      await authFetch(`/api/admin/benefits/procedure-codes/${codeId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
       });
       fetchAllData();
     } catch (error) {
@@ -132,11 +125,9 @@ export function ComprehensiveBenefitPanel({ benefitId, benefitName }: Props) {
   const addExclusion = async () => {
     if (!newExclusion.description) return;
     try {
-      const token = localStorage.getItem('token');
-      await fetch(`/api/admin/benefits/${benefitId}/exclusions`, {
+      await authFetch(`/api/admin/benefits/${benefitId}/exclusions`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(newExclusion),
@@ -150,10 +141,8 @@ export function ComprehensiveBenefitPanel({ benefitId, benefitName }: Props) {
 
   const deleteExclusion = async (exclusionId: string) => {
     try {
-      const token = localStorage.getItem('token');
-      await fetch(`/api/admin/benefits/exclusions/${exclusionId}`, {
+      await authFetch(`/api/admin/benefits/exclusions/${exclusionId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
       });
       fetchAllData();
     } catch (error) {
@@ -164,11 +153,9 @@ export function ComprehensiveBenefitPanel({ benefitId, benefitName }: Props) {
   const addCondition = async () => {
     if (!newCondition.description) return;
     try {
-      const token = localStorage.getItem('token');
-      await fetch(`/api/admin/benefits/${benefitId}/conditions`, {
+      await authFetch(`/api/admin/benefits/${benefitId}/conditions`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(newCondition),
@@ -182,10 +169,8 @@ export function ComprehensiveBenefitPanel({ benefitId, benefitName }: Props) {
 
   const deleteCondition = async (conditionId: string) => {
     try {
-      const token = localStorage.getItem('token');
-      await fetch(`/api/admin/benefits/conditions/${conditionId}`, {
+      await authFetch(`/api/admin/benefits/conditions/${conditionId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
       });
       fetchAllData();
     } catch (error) {

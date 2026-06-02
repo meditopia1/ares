@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -7,6 +7,9 @@ import { SidebarLayout } from '@/components/layout/sidebar-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FeedbackWidget } from '@/components/feedback/feedback-widget';
+import { DashboardMetricCard } from '@/components/dashboard/dashboard-metric-card';
+import { authFetch } from '@/lib/auth-fetch';
+import { Users, ShieldCheck, FileText, Clock3, Building2, CreditCard, DollarSign } from 'lucide-react';
 
 interface SystemStats {
   totalMembers: number;
@@ -81,10 +84,12 @@ export default function AdminDashboardPage() {
   const fetchStats = async () => {
     try {
       setLoadingStats(true);
-      const response = await fetch('/api/admin/dashboard/stats');
+      const response = await authFetch('/api/admin/dashboard/stats');
       if (response.ok) {
         const data = await response.json();
         setStats(data);
+      } else {
+        console.error('Failed to fetch stats:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -96,7 +101,7 @@ export default function AdminDashboardPage() {
   const fetchPendingApprovals = async () => {
     try {
       setLoadingApprovals(true);
-      const response = await fetch('/api/admin/dashboard/approvals');
+      const response = await authFetch('/api/admin/dashboard/approvals');
       if (response.ok) {
         const data = await response.json();
         setPendingApprovals(data);
@@ -111,7 +116,7 @@ export default function AdminDashboardPage() {
   const fetchAlerts = async () => {
     try {
       setLoadingAlerts(true);
-      const response = await fetch('/api/admin/dashboard/alerts');
+      const response = await authFetch('/api/admin/dashboard/alerts');
       if (response.ok) {
         const data = await response.json();
         setAlerts(data);
@@ -126,7 +131,7 @@ export default function AdminDashboardPage() {
   const fetchRecentActivity = async () => {
     try {
       setLoadingActivity(true);
-      const response = await fetch('/api/admin/dashboard/activity');
+      const response = await authFetch('/api/admin/dashboard/activity');
       if (response.ok) {
         const data = await response.json();
         setRecentActivity(data);
@@ -146,6 +151,7 @@ export default function AdminDashboardPage() {
     outstandingClaims: 0,
     cashReserves: 0,
   });
+
 
   // Temporarily disabled auth check for demo
   // useEffect(() => {
@@ -364,7 +370,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* System Statistics */}
-        <div>
+        <div className="rounded-2xl border border-slate-200/90 bg-white/80 p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
           <h2 className="text-lg font-semibold text-gray-900 mb-3">System Statistics</h2>
           {loadingStats ? (
             <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
@@ -381,123 +387,112 @@ export default function AdminDashboardPage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <p className="text-sm text-gray-600">Total Members</p>
-                    <p className="text-3xl font-bold mt-1">{stats.totalMembers.toLocaleString()}</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <p className="text-sm text-gray-600">Active Policies</p>
-                    <p className="text-3xl font-bold mt-1 text-green-600">
-                      {stats.activeMembers.toLocaleString()}
-                    </p>
-                    <div className="mt-2 text-xs text-gray-500">
-                      <span className="text-yellow-600">{stats.pendingMembers} pending</span>
-                      {' • '}
-                      <span className="text-red-600">{stats.suspendedMembers} suspended</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <p className="text-sm text-gray-600">Pending Claims</p>
-                    <p className="text-3xl font-bold mt-1 text-yellow-600">{stats.pendingClaims}</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <p className="text-sm text-gray-600">Pending Preauths</p>
-                    <p className="text-3xl font-bold mt-1 text-orange-600">
-                      {stats.pendingPreauths}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <p className="text-sm text-gray-600">Providers</p>
-                    <p className="text-3xl font-bold mt-1">{stats.totalProviders}</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <p className="text-sm text-gray-600">Active Brokers</p>
-                    <p className="text-3xl font-bold mt-1">{stats.activeBrokers}</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <DashboardMetricCard
+                title="Total Members"
+                value={stats.totalMembers.toLocaleString()}
+                icon={<Users className="w-6 h-6 text-cyan-600" />}
+                accentColor="rgba(34, 211, 238, 1)"
+                glowFrom="rgba(34, 211, 238, 0.075)"
+                glowTo="rgba(34, 211, 238, 0.2)"
+                iconBackgroundClassName="bg-cyan-100"
+              />
+              <DashboardMetricCard
+                title="Active Policies"
+                value={stats.activeMembers.toLocaleString()}
+                subtitle={`${stats.pendingMembers} pending • ${stats.suspendedMembers} suspended`}
+                valueClassName="text-green-600"
+                icon={<ShieldCheck className="w-6 h-6 text-green-600" />}
+                accentColor="rgba(16, 185, 129, 1)"
+                glowFrom="rgba(16, 185, 129, 0.075)"
+                glowTo="rgba(16, 185, 129, 0.2)"
+                iconBackgroundClassName="bg-green-100"
+              />
+              <DashboardMetricCard
+                title="Pending Claims"
+                value={stats.pendingClaims}
+                valueClassName="text-yellow-600"
+                icon={<FileText className="w-6 h-6 text-yellow-600" />}
+                accentColor="rgba(234, 179, 8, 1)"
+                glowFrom="rgba(234, 179, 8, 0.075)"
+                glowTo="rgba(234, 179, 8, 0.2)"
+                iconBackgroundClassName="bg-yellow-100"
+              />
+              <DashboardMetricCard
+                title="Pending Preauths"
+                value={stats.pendingPreauths}
+                valueClassName="text-orange-600"
+                icon={<Clock3 className="w-6 h-6 text-orange-600" />}
+                accentColor="rgba(249, 115, 22, 1)"
+                glowFrom="rgba(249, 115, 22, 0.075)"
+                glowTo="rgba(249, 115, 22, 0.2)"
+                iconBackgroundClassName="bg-orange-100"
+              />
+              <DashboardMetricCard
+                title="Providers"
+                value={stats.totalProviders}
+                icon={<Building2 className="w-6 h-6 text-blue-600" />}
+                accentColor="rgba(59, 130, 246, 1)"
+                glowFrom="rgba(59, 130, 246, 0.075)"
+                glowTo="rgba(59, 130, 246, 0.2)"
+                iconBackgroundClassName="bg-blue-100"
+              />
+              <DashboardMetricCard
+                title="Active Brokers"
+                value={stats.activeBrokers}
+                icon={<CreditCard className="w-6 h-6 text-purple-600" />}
+                accentColor="rgba(147, 51, 234, 1)"
+                glowFrom="rgba(147, 51, 234, 0.075)"
+                glowTo="rgba(147, 51, 234, 0.2)"
+                iconBackgroundClassName="bg-purple-100"
+              />
             </div>
           )}
         </div>
 
         {/* Financial Overview */}
-        <div>
+        <div className="rounded-2xl border border-slate-200/90 bg-white/80 p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
           <h2 className="text-lg font-semibold text-gray-900 mb-3">Financial Overview (MTD)</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <p className="text-sm text-gray-600">Monthly Premium</p>
-                  <p className="text-2xl font-bold mt-1">
-                    R{financialStats.monthlyPremium.toLocaleString()}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">No movement yet</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <p className="text-sm text-gray-600">Claims Paid</p>
-                  <p className="text-2xl font-bold mt-1">
-                    R{financialStats.claimsPaid.toLocaleString()}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">No claims yet</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <p className="text-sm text-gray-600">Outstanding Claims</p>
-                  <p className="text-2xl font-bold mt-1">
-                    R{financialStats.outstandingClaims.toLocaleString()}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">0 claims</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <p className="text-sm text-gray-600">Cash Reserves</p>
-                  <p className="text-2xl font-bold mt-1">
-                    R{financialStats.cashReserves.toLocaleString()}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">No reserves yet</p>
-                </div>
-              </CardContent>
-            </Card>
+            <DashboardMetricCard
+              title="Monthly Premium"
+              value={`R${financialStats.monthlyPremium.toLocaleString()}`}
+              subtitle="No movement yet"
+              icon={<DollarSign className="w-6 h-6 text-cyan-600" />}
+              accentColor="rgba(34, 211, 238, 1)"
+              glowFrom="rgba(34, 211, 238, 0.075)"
+              glowTo="rgba(34, 211, 238, 0.2)"
+              iconBackgroundClassName="bg-cyan-100"
+            />
+            <DashboardMetricCard
+              title="Claims Paid"
+              value={`R${financialStats.claimsPaid.toLocaleString()}`}
+              subtitle="No claims yet"
+              icon={<CreditCard className="w-6 h-6 text-green-600" />}
+              accentColor="rgba(16, 185, 129, 1)"
+              glowFrom="rgba(16, 185, 129, 0.075)"
+              glowTo="rgba(16, 185, 129, 0.2)"
+              iconBackgroundClassName="bg-green-100"
+            />
+            <DashboardMetricCard
+              title="Outstanding Claims"
+              value={`R${financialStats.outstandingClaims.toLocaleString()}`}
+              subtitle="0 claims"
+              icon={<FileText className="w-6 h-6 text-blue-600" />}
+              accentColor="rgba(59, 130, 246, 1)"
+              glowFrom="rgba(59, 130, 246, 0.075)"
+              glowTo="rgba(59, 130, 246, 0.2)"
+              iconBackgroundClassName="bg-blue-100"
+            />
+            <DashboardMetricCard
+              title="Cash Reserves"
+              value={`R${financialStats.cashReserves.toLocaleString()}`}
+              subtitle="No reserves yet"
+              icon={<Building2 className="w-6 h-6 text-purple-600" />}
+              accentColor="rgba(147, 51, 234, 1)"
+              glowFrom="rgba(147, 51, 234, 0.075)"
+              glowTo="rgba(147, 51, 234, 0.2)"
+              iconBackgroundClassName="bg-purple-100"
+            />
           </div>
         </div>
 
@@ -587,7 +582,7 @@ export default function AdminDashboardPage() {
                         </div>
                         <p className="text-sm text-gray-600">{approval.description}</p>
                         <p className="text-xs text-gray-500 mt-1" suppressHydrationWarning>
-                          By {approval.submittedBy} • {formatTimeAgo(approval.submittedDate)}
+                          By {approval.submittedBy} â€¢ {formatTimeAgo(approval.submittedDate)}
                         </p>
                       </div>
                       <div className="flex gap-2">
@@ -633,7 +628,7 @@ export default function AdminDashboardPage() {
                         <p className="text-sm font-medium text-gray-900">{activity.action}</p>
                         <p className="text-sm text-gray-600">{activity.description}</p>
                         <p className="text-xs text-gray-500" suppressHydrationWarning>
-                          {activity.user} • {formatTimeAgo(activity.timestamp)}
+                          {activity.user} â€¢ {formatTimeAgo(activity.timestamp)}
                         </p>
                       </div>
                     </div>
@@ -746,3 +741,6 @@ export default function AdminDashboardPage() {
     </SidebarLayout>
   );
 }
+
+
+

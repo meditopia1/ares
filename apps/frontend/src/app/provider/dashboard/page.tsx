@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
+import { InlinePageLoading } from '@/components/layout/page-loading';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { authFetch } from '@/lib/auth-fetch';
 
 export default function ProviderDashboardPage() {
   const router = useRouter();
@@ -37,10 +39,17 @@ export default function ProviderDashboardPage() {
     
     try {
       setLoadingData(true);
-      const response = await fetch(`/api/provider/claims?providerId=${user.id}&limit=5`);
+      const response = await authFetch('/api/provider/claims?limit=5');
       const data = await response.json();
       
-      setStats(data.stats || {
+      const apiStats = data.stats || {};
+      setStats({
+        totalClaims: apiStats.totalClaims ?? apiStats.total ?? 0,
+        pendingClaims: apiStats.pendingClaims ?? apiStats.pending ?? 0,
+        approvedClaims: apiStats.approvedClaims ?? apiStats.approved ?? 0,
+        totalApproved: apiStats.totalApproved ?? apiStats.total_approved ?? 0,
+        totalPending: apiStats.totalPending ?? apiStats.total_pending ?? 0
+      } || {
         totalClaims: 0,
         pendingClaims: 0,
         approvedClaims: 0,
@@ -55,19 +64,30 @@ export default function ProviderDashboardPage() {
     }
   };
 
-  if (loading || loadingData) {
+  if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
+      <SidebarLayout>
+        <InlinePageLoading
+          title="Provider Dashboard"
+          description="Loading provider access..."
+          message="Checking your provider session..."
+        />
+      </SidebarLayout>
     );
   }
 
-  if (!user) {
-    return null;
+  if (!user) return null;
+
+  if (loadingData) {
+    return (
+      <SidebarLayout>
+        <InlinePageLoading
+          title="Provider Dashboard"
+          description={`Welcome back, Dr. ${user.lastName}`}
+          message="Loading provider claims and summary..."
+        />
+      </SidebarLayout>
+    );
   }
 
   const pendingItems: any[] = [];

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Download, FileText, CheckCircle, Clock, XCircle, Plus, Eye } from 'lucide-react';
 import { formatCurrency, getBatchStatusColor } from '@/lib/payment-processing';
+import { authFetch } from '@/lib/auth-fetch';
 
 interface PaymentBatch {
   id: string;
@@ -55,7 +56,7 @@ export default function PaymentBatchesPage() {
       const params = new URLSearchParams();
       if (statusFilter) params.append('status', statusFilter);
       
-      const response = await fetch(`/api/finance/payment-batches?${params}`);
+      const response = await authFetch(`/api/finance/payment-batches?${params}`);
       const data = await response.json();
       setBatches(data.batches || []);
       setSummary(data.summary || null);
@@ -77,7 +78,7 @@ export default function PaymentBatchesPage() {
     if (!window.confirm(confirmMessage)) return;
 
     try {
-      const response = await fetch(`/api/finance/payment-batches/${batchId}`, {
+      const response = await authFetch(`/api/finance/payment-batches/${batchId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action })
@@ -101,7 +102,7 @@ export default function PaymentBatchesPage() {
     if (!window.confirm('Delete this draft batch? This cannot be undone.')) return;
 
     try {
-      const response = await fetch(`/api/finance/payment-batches/${batchId}`, {
+      const response = await authFetch(`/api/finance/payment-batches/${batchId}`, {
         method: 'DELETE'
       });
 

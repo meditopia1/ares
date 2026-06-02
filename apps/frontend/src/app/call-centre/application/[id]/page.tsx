@@ -7,6 +7,7 @@ import { SidebarLayout } from '@/components/layout/sidebar-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { User, MapPin, FileText, Users, CreditCard, CheckCircle, Phone, Mic, Square, Play, Upload } from 'lucide-react';
+import { authFetch } from '@/lib/auth-fetch';
 
 interface Application {
   id: string;
@@ -81,7 +82,7 @@ export default function CallCentreApplicationDetailPage() {
   const loadApplication = async () => {
     setLoadingApp(true);
     try {
-      const response = await fetch('/api/admin/applications');
+      const response = await authFetch('/api/call-centre/applications');
       
       if (!response.ok) throw new Error('Failed to fetch applications');
       
@@ -197,7 +198,7 @@ export default function CallCentreApplicationDetailPage() {
 
     setVerifying(true);
     try {
-      const response = await fetch('/api/admin/applications', {
+      const response = await authFetch('/api/call-centre/applications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

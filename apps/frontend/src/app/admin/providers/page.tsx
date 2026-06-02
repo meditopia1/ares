@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
+import { PageLoading } from '@/components/layout/page-loading';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { authFetch } from '@/lib/auth-fetch';
 
 interface Provider {
   id: string;
@@ -34,6 +36,7 @@ export default function AdminProvidersPage() {
   const [searchInput, setSearchInput] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [providers, setProviders] = useState<Provider[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,16 +68,31 @@ export default function AdminProvidersPage() {
     pending: 0,
     inactive: 0,
   });
+  const pageSize = 25;
 
   useEffect(() => {
     fetchProviders();
   }, []);
 
-  async function fetchProviders() {
+  async function fetchProviders(options?: { search?: string; status?: string }) {
     try {
       setIsLoading(true);
+
+      const params = new URLSearchParams();
+      params.set('limit', String(pageSize));
+      params.set('offset', '0');
+
+      const search = options?.search ?? searchTerm;
+      const status = options?.status ?? statusFilter;
+
+      if (search.trim()) {
+        params.set('search', search.trim());
+      }
+      if (status) {
+        params.set('status', status);
+      }
       
-      const response = await fetch('/api/admin/providers', {
+      const response = await authFetch(`/api/admin/providers?${params.toString()}`, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache',
@@ -88,8 +106,9 @@ export default function AdminProvidersPage() {
       }
       
       setProviders(data.providers || []);
+      setTotalCount(data.total || data.providers?.length || 0);
       setStats(data.stats || stats);
-      console.log(`✅ Loaded ${data.providers?.length} providers from API`);
+      console.log(`✅ Loaded ${data.providers?.length || 0} providers from API`);
     } catch (error: any) {
       console.error('❌ Error fetching providers:', error);
       setError(error.message || 'Failed to load providers');
@@ -115,7 +134,7 @@ export default function AdminProvidersPage() {
         return;
       }
 
-      const response = await fetch('/api/admin/providers', {
+      const response = await authFetch('/api/admin/providers', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -160,9 +179,7 @@ export default function AdminProvidersPage() {
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
+      <PageLoading message="Loading providers..." />
     );
   }
 
@@ -182,6 +199,7 @@ export default function AdminProvidersPage() {
 
   const handleSearch = () => {
     setSearchTerm(searchInput);
+    fetchProviders({ search: searchInput, status: statusFilter });
   };
 
   const handleSearchKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -190,14 +208,7 @@ export default function AdminProvidersPage() {
     }
   };
 
-  const filteredProviders = providers.filter((p) => {
-    const matchesSearch = 
-      p.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      p.provider_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.practice_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = !statusFilter || p.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredProviders = providers;
 
   const activeCount = stats.active;
   const pendingCount = stats.pending;
@@ -326,7 +337,7 @@ export default function AdminProvidersPage() {
             <CardContent className="pt-6">
               <div className="text-center">
                 <p className="text-sm text-gray-600">Total Providers</p>
-                <p className="text-3xl font-bold mt-1">{providers.length}</p>
+                <p className="text-3xl font-bold mt-1">{stats.total}</p>
               </div>
             </CardContent>
           </Card>
@@ -381,7 +392,11 @@ export default function AdminProvidersPage() {
                 <label className="text-sm font-medium">Status</label>
                 <select 
                   value={statusFilter} 
-                  onChange={(e) => setStatusFilter(e.target.value)} 
+                  onChange={(e) => {
+                    const nextStatus = e.target.value;
+                    setStatusFilter(nextStatus);
+                    fetchProviders({ search: searchInput, status: nextStatus });
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 >
                   <option value="">Click to select</option>
@@ -400,7 +415,7 @@ export default function AdminProvidersPage() {
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">Provider Directory</h2>
               <p className="text-sm text-gray-600">
-                Showing {filteredProviders.length} of {providers.length} providers
+                Showing {providers.length} of {totalCount} providers
               </p>
             </div>
           </div>

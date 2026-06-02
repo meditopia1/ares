@@ -1,10 +1,13 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAnyRole } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic';
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    await requireAnyRole(request, ['admin', 'system_admin', 'operations_manager']);
+    
     const supabase = createServerSupabaseClient();
     const body = await request.json();
 
@@ -39,19 +42,12 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
-  try {
-    const supabase = createServerSupabaseClient();
-    const { error } = await supabase
-      .from('payment_groups')
-      .delete()
-      .eq('id', params.id);
-
-    if (error) throw error;
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting payment group:', error);
-    return NextResponse.json({ error: 'Failed to delete payment group' }, { status: 500 });
-  }
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  return NextResponse.json(
+    {
+      error: 'Payment group deletion is disabled. Use inactive/archived status instead.',
+      code: 'DELETE_DISABLED'
+    },
+    { status: 403 }
+  );
 }

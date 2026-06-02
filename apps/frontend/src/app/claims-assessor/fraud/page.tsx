@@ -7,6 +7,7 @@ import { SidebarLayout } from '@/components/layout/sidebar-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { authFetch } from '@/lib/auth-fetch';
 import { AlertTriangle, Shield, CheckCircle } from 'lucide-react';
 
 interface FraudCase {
@@ -52,7 +53,7 @@ export default function FraudCasesPage() {
   const fetchFraudCases = async () => {
     try {
       setLoadingCases(true);
-      const response = await fetch('/api/claims-assessor/fraud');
+      const response = await authFetch('/api/claims-assessor/fraud');
       const data = await response.json();
       setCases(data.cases || []);
     } catch (error) {
@@ -66,7 +67,7 @@ export default function FraudCasesPage() {
     if (!selectedCase) return;
 
     try {
-      await fetch(`/api/claims-assessor/fraud/${selectedCase.id}`, {
+      await authFetch(`/api/claims-assessor/fraud/${selectedCase.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -89,7 +90,7 @@ export default function FraudCasesPage() {
     if (!selectedCase) return;
 
     try {
-      await fetch(`/api/claims-assessor/fraud/${selectedCase.id}`, {
+      await authFetch(`/api/claims-assessor/fraud/${selectedCase.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -114,7 +115,7 @@ export default function FraudCasesPage() {
     if (!selectedCase) return;
 
     try {
-      await fetch(`/api/claims-assessor/fraud/${selectedCase.id}`, {
+      await authFetch(`/api/claims-assessor/fraud/${selectedCase.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

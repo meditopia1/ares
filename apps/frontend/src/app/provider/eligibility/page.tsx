@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
+import { InlinePageLoading } from '@/components/layout/page-loading';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { authFetch } from '@/lib/auth-fetch';
 
 export default function EligibilityCheckPage() {
   const router = useRouter();
@@ -24,9 +26,13 @@ export default function EligibilityCheckPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
+      <SidebarLayout>
+        <InlinePageLoading
+          title="Eligibility Check"
+          description="Verify patient coverage and benefit details in real-time"
+          message="Opening eligibility tools..."
+        />
+      </SidebarLayout>
     );
   }
 
@@ -46,14 +52,14 @@ export default function EligibilityCheckPage() {
     setSearchResult(null);
 
     try {
-      const response = await fetch('/api/provider/eligibility', {
+      const response = await authFetch('/api/provider/eligibility', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          memberNumber: memberNumber || undefined,
-          idNumber: idNumber || undefined,
+          member_number: memberNumber || undefined,
+          id_number: idNumber || undefined,
         }),
       });
 
@@ -85,28 +91,38 @@ export default function EligibilityCheckPage() {
       let totalLimit = 0;
       let totalUsed = 0;
       const benefitsArray = [];
+      const benefitSource = data.member?.benefits_summary || {};
+      const waitingPeriods = data.member?.waiting_periods || {};
 
-      if (data.benefits) {
-        for (const [key, benefit] of Object.entries(data.benefits)) {
+      if (benefitSource) {
+        for (const [key, benefit] of Object.entries(benefitSource)) {
           const b = benefit as any;
           
           // Add to totals if benefit has amount limits
-          if (b.limitAmount > 0) {
-            totalLimit += b.limitAmount;
-            totalUsed += b.used;
+          if ((b.total_limit_amount || 0) > 0) {
+            totalLimit += b.total_limit_amount || 0;
+            totalUsed += b.used_amount || 0;
           }
 
           // Determine if pre-auth is required (typically for specialist, hospital, maternity)
           const preAuthRequired = ['specialist_visits', 'hospital', 'maternity', 'surgery'].includes(key);
 
           benefitsArray.push({
-            category: b.name,
-            limit: b.limit,
-            used: b.limitAmount > 0 ? `R${b.used.toLocaleString()}` : `${b.usedCount} visits`,
-            remaining: b.remaining,
+            category: key.replace(/_/g, ' '),
+            limit: (b.total_limit_amount || 0) > 0
+              ? `R${Number(b.total_limit_amount || 0).toLocaleString()}`
+              : `${b.total_limit_count || 0} visits`,
+            used: (b.total_limit_amount || 0) > 0
+              ? `R${Number(b.used_amount || 0).toLocaleString()}`
+              : `${b.used_count || 0} visits`,
+            remaining: (b.total_limit_amount || 0) > 0
+              ? `R${Number(b.remaining_amount || 0).toLocaleString()}`
+              : `${b.remaining_count || 0} visits`,
             coPayment: 'None', // TODO: Add co-payment info to product_benefits table
             preAuthRequired: preAuthRequired,
-            usagePercentage: b.usagePercentage,
+            usagePercentage: b.total_limit_amount
+              ? ((Number(b.used_amount || 0) / Number(b.total_limit_amount || 1)) * 100)
+              : 0,
           });
         }
       }
@@ -120,36 +136,38 @@ export default function EligibilityCheckPage() {
         eligible: data.eligible,
         message: data.message,
         member: {
-          memberNumber: data.member?.memberNumber || 'N/A',
-          firstName: data.member?.firstName || 'N/A',
-          lastName: data.member?.lastName || 'N/A',
-          idNumber: data.member?.idNumber || 'N/A',
-          dateOfBirth: data.member?.dateOfBirth || 'N/A',
-          contactNumber: '-', // TODO: Add to members table
-          email: '-', // TODO: Add to members table
+          id: data.member?.id || null,
+          memberNumber: data.member?.member_number || 'N/A',
+          firstName: data.member?.first_name || 'N/A',
+          lastName: data.member?.last_name || 'N/A',
+          idNumber: data.member?.id_number || 'N/A',
+          dateOfBirth: data.member?.date_of_birth || 'N/A',
+          contactNumber: data.member?.mobile || '-',
+          email: data.member?.email || '-',
+          status: data.member?.status || 'unknown',
         },
-        policy: data.policy ? {
-          policyNumber: data.policy.policyNumber,
-          planName: data.member?.planName || data.policy.planType || 'Medical Plan',
-          status: data.policy.status,
-          startDate: data.policy.startDate ? new Date(data.policy.startDate).toLocaleDateString('en-ZA') : 'N/A',
-          renewalDate: data.policy.startDate ? new Date(new Date(data.policy.startDate).setFullYear(new Date(data.policy.startDate).getFullYear() + 1)).toLocaleDateString('en-ZA') : 'N/A',
-          premium: data.policy.monthlyPremium || 0,
+        policy: data.member ? {
+          policyNumber: data.member?.member_number || 'N/A',
+          planName: data.member?.plan_name || 'Medical Plan',
+          status: data.member?.status || 'unknown',
+          startDate: data.member?.start_date ? new Date(data.member.start_date).toLocaleDateString('en-ZA') : 'N/A',
+          renewalDate: data.member?.start_date ? new Date(new Date(data.member.start_date).setFullYear(new Date(data.member.start_date).getFullYear() + 1)).toLocaleDateString('en-ZA') : 'N/A',
+          premium: Number(data.member?.monthly_premium || 0),
         } : null,
-        coverage: data.waitingPeriods ? {
+        coverage: data.member ? {
           inNetwork: true,
           outOfNetwork: true,
           annualLimit: totalLimit,
           annualUsed: totalUsed,
           annualRemaining: totalLimit - totalUsed,
           waitingPeriods: {
-            general: data.waitingPeriods.general.completed ? 'Completed' : `${data.waitingPeriods.general.daysRemaining} days remaining`,
-            specialist: data.waitingPeriods.specialist.completed ? 'Completed' : `${data.waitingPeriods.specialist.daysRemaining} days remaining`,
-            hospital: data.waitingPeriods.hospital.completed ? 'Completed' : `${data.waitingPeriods.hospital.daysRemaining} days remaining`,
+            general: waitingPeriods.general?.completed ? 'Completed' : `${waitingPeriods.general?.daysRemaining ?? 0} days remaining`,
+            specialist: waitingPeriods.specialist?.completed ? 'Completed' : `${waitingPeriods.specialist?.daysRemaining ?? 0} days remaining`,
+            hospital: waitingPeriods.hospital?.completed ? 'Completed' : `${waitingPeriods.hospital?.daysRemaining ?? 0} days remaining`,
           },
         } : null,
         benefits: benefitsArray,
-        dependants: [], // TODO: Fetch dependants from member_dependants table
+        dependants: data.member?.dependants || [],
       });
     } catch (error: any) {
       console.error('Error checking eligibility:', error);
@@ -482,7 +500,11 @@ export default function EligibilityCheckPage() {
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
                           <span className="text-gray-600 font-medium">
-                            {dependant.name.split(' ').map((n: string) => n[0]).join('')}
+                            {(dependant.name || 'N/A')
+                              .split(' ')
+                              .filter(Boolean)
+                              .map((n: string) => n[0])
+                              .join('')}
                           </span>
                         </div>
                         <div>

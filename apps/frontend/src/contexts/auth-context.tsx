@@ -1,19 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: true,
-      detectSessionInUrl: false
-    }
-  }
-);
+import { supabase } from '@/lib/supabase';
 
 interface User {
   id: string;
@@ -22,6 +10,7 @@ interface User {
   lastName: string;
   roles: string[];
   permissions: string[];
+  authUserId?: string;
 }
 
 interface AuthContextType {
@@ -93,14 +82,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (providerData) {
         // User is a provider
         console.log('✅ Provider user found');
-        const nameParts = providerData.name.split(' ');
+        const providerName = providerData.name || providerData.practice_name || '';
+        const nameParts = providerName.split(' ').filter(Boolean);
         const transformedUser: User = {
-          id: session.user.id,
+          id: providerData.id,
           email: providerData.login_email || session.user.email || '',
           firstName: nameParts[0] || '',
           lastName: nameParts.slice(1).join(' ') || '',
           roles: ['provider'],
           permissions: [],
+          authUserId: session.user.id,
         };
         console.log('✅ Provider data loaded:', transformedUser);
         setUser(transformedUser);
@@ -173,57 +164,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      // First, try Supabase Auth (for department users)
-      const { error } = await supabase.auth.signInWithPassword({
+      // Try Supabase Auth (works for both staff and providers)
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (!error) {
-        // Supabase Auth succeeded
-        await loadUser();
-        return;
-      }
-
-      // Supabase Auth failed, check if it's a provider login
-      console.log('🔄 Checking provider credentials...');
-      const { data: provider, error: providerError } = await supabase
-        .from('providers')
-        .select('id, name, login_email, provider_number, practice_name')
-        .eq('login_email', email)
-        .eq('login_password', password)
-        .eq('is_active', true)
-        .single();
-
-      if (providerError || !provider) {
-        console.error('❌ Provider login failed:', providerError);
+      if (authError) {
         throw new Error('Invalid email or password');
       }
 
-      // Provider login successful - create custom session
-      console.log('✅ Provider login successful:', provider);
-      const nameParts = provider.name.split(' ');
-      const providerUser: User = {
-        id: provider.id, // Use provider ID directly
-        email: provider.login_email,
-        firstName: nameParts[0] || '',
-        lastName: nameParts.slice(1).join(' ') || '',
-        roles: ['provider'],
-        permissions: [],
-      };
+      // Check if user is a provider
+      const { data: provider } = await supabase
+        .from('providers')
+        .select('id, name, login_email, provider_number, practice_name')
+        .eq('user_id', authData.user.id)
+        .eq('is_active', true)
+        .single();
 
-      // Store provider session in localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('provider_session', JSON.stringify({
-          provider: providerUser,
-          timestamp: Date.now()
-        }));
+      if (provider) {
+        // Provider login successful - create custom session
+        console.log('✅ Provider login successful:', provider);
+        const providerName = provider.name || provider.practice_name || '';
+        const nameParts = providerName.split(' ').filter(Boolean);
+        const providerUser: User = {
+          id: provider.id,
+          email: provider.login_email || authData.user.email,
+          firstName: nameParts[0] || '',
+          lastName: nameParts.slice(1).join(' ') || '',
+          roles: ['provider'],
+          permissions: [],
+          authUserId: authData.user.id,
+        };
+
+        // Store provider session in localStorage
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('provider_session', JSON.stringify({
+            provider: providerUser,
+            timestamp: Date.now()
+          }));
+        }
+
+        setUser(providerUser);
+      } else {
+        // Staff login successful
+        await loadUser();
       }
-
-      setUser(providerUser);
     } catch (error: any) {
       console.error('Login error:', error);
       throw new Error(error.message || 'Login failed');
+    } finally {
+      setLoading(false);
     }
   };
 

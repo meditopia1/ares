@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { createClient } from '@supabase/supabase-js';
+import { requireAnyRole } from '@/lib/auth-server';
 import * as XLSX from 'xlsx';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
+);
 
 function capitalizeName(name: string): string {
   if (!name) return '';
@@ -12,7 +24,7 @@ function capitalizeName(name: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient();
+    await requireAnyRole(request, ['operations_manager', 'system_admin', 'admin']);
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const groupId = formData.get('groupId') as string;
@@ -111,7 +123,6 @@ export async function POST(request: NextRequest) {
           id_number: idNumber ? String(idNumber).trim() : null,
           date_of_birth: parsedDate,
           monthly_premium: parsedPremium,
-          employee_number: employeeNumber ? String(employeeNumber).trim() : null,
           payment_group_id: groupId,
           collection_method: collectionMethod,
           status: 'active',

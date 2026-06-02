@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+import { createAuthenticatedSupabaseClient, requireAnyRole } from '@/lib/auth-server';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    await requireAnyRole(request, ['claims', 'admin', 'system_admin']);
+
+    const supabase = createAuthenticatedSupabaseClient(request);
     const { searchParams } = new URL(request.url);
-    
     const limit = parseInt(searchParams.get('limit') || '10');
 
     const { data: claims, error: claimsError } = await supabase

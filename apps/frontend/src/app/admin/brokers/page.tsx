@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
+import { InlinePageLoading } from '@/components/layout/page-loading';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { authFetch } from '@/lib/auth-fetch';
 
 interface Broker {
   id: string;
@@ -50,7 +52,7 @@ export default function AdminBrokersPage() {
   const fetchBrokers = async () => {
     try {
       console.log('Fetching brokers...');
-      const response = await fetch('/api/admin/brokers');
+      const response = await authFetch('/api/admin/brokers');
       const data = await response.json();
       console.log('Brokers response:', data);
       setBrokers(data.brokers || []);
@@ -71,7 +73,7 @@ export default function AdminBrokersPage() {
       
       const method = editingBroker ? 'PUT' : 'POST';
 
-      const response = await fetch(url, {
+      const response = await authFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -130,7 +132,7 @@ export default function AdminBrokersPage() {
     }
 
     try {
-      const response = await fetch(`/api/admin/brokers/${broker.id}`, {
+      const response = await authFetch(`/api/admin/brokers/${broker.id}`, {
         method: 'DELETE',
       });
 
@@ -166,7 +168,17 @@ export default function AdminBrokersPage() {
   //   if (!loading && !isAuthenticated) router.push('/login');
   // }, [loading, isAuthenticated, router]);
 
-  if (loading || !user || loadingBrokers) return <div className="min-h-screen flex items-center justify-center"><p>Loading...</p></div>;
+  if (loading || !user || loadingBrokers) {
+    return (
+      <SidebarLayout>
+        <InlinePageLoading
+          title="Broker Administration"
+          description="Manage broker directory and commissions"
+          message="Loading brokers..."
+        />
+      </SidebarLayout>
+    );
+  }
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = { 

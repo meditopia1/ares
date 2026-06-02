@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { FileText, AlertTriangle, Download, Eye } from 'lucide-react';
 import { getClaimFormConfig } from '@/lib/claim-form-config';
 import { ClaimAdjudicationPanel } from '@/components/claims/claim-adjudication-panel';
+import { authFetch } from '@/lib/auth-fetch';
 
 interface Claim {
   id: string;
@@ -59,7 +60,10 @@ export default function ClaimsQueuePage() {
       const params = new URLSearchParams();
       if (statusFilter) params.append('status', statusFilter);
       
-      const response = await fetch(`/api/claims-assessor/queue?${params}`);
+      const response = await authFetch(`/api/claims-assessor/queue?${params}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch claims');
+      }
       const data = await response.json();
       setClaims(data.claims || []);
     } catch (error) {
@@ -73,7 +77,7 @@ export default function ClaimsQueuePage() {
     if (!selectedClaim) return;
     
     try {
-      const response = await fetch(`/api/claims-assessor/adjudicate/${selectedClaim.id}`, {
+      const response = await authFetch(`/api/claims-assessor/adjudicate/${selectedClaim.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

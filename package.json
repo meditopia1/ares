@@ -4,15 +4,19 @@
   "private": true,
   "description": "Day1Main - South African Medical Insurer Operating System",
   "scripts": {
-    "predev": "node kill-duplicate-ports.js",
+    "predev": "node scripts/policy-data/kill-duplicate-ports.js",
     "dev": "pnpm --parallel -r dev",
-    "dev:clean": "node kill-duplicate-ports.js && pnpm --parallel -r dev",
+    "dev:clean": "node scripts/policy-data/kill-duplicate-ports.js && pnpm --parallel -r dev",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "typecheck": "pnpm -r typecheck",
-    "kill-ports": "node kill-duplicate-ports.js"
+    "kill-ports": "node scripts/policy-data/kill-duplicate-ports.js",
+    "migrate:storage": "node scripts/policy-data/migrate-storage-schema.js",
+    "migrate:storage:dump": "node scripts/policy-data/migrate-storage-schema.js",
+    "migrate:storage:apply": "node scripts/policy-data/migrate-storage-schema.js",
+    "migrate:storage:apply:ssh": "node scripts/policy-data/migrate-storage-schema.js"
   },
   "keywords": [
     "medical-insurer",

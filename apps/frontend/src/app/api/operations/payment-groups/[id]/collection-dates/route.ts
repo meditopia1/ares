@@ -1,12 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { createClient } from '@supabase/supabase-js';
+import { requireAnyRole } from '@/lib/auth-server';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
+);
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createServerSupabaseClient();
+    await requireAnyRole(request, ['operations_manager', 'system_admin', 'admin', 'finance_manager']);
     const { data, error } = await supabase
       .from('payment_groups')
       .select('collection_dates')
@@ -29,7 +41,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = createServerSupabaseClient();
+    await requireAnyRole(request, ['operations_manager', 'system_admin', 'admin']);
     const body = await request.json();
     const { collection_dates } = body;
 

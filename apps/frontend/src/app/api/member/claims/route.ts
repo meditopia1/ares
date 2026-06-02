@@ -27,35 +27,14 @@ export async function GET(request: NextRequest) {
     // Build query
     let query = supabase
       .from('claims')
-      .select(`
-        id,
-        claim_number,
-        member_id,
-        provider_id,
-        benefit_type,
-        service_date,
-        submission_date,
-        claimed_amount,
-        approved_amount,
-        claim_status,
-        rejection_reason,
-        pend_reason,
-        approved_date,
-        paid_date,
-        payment_reference,
-        created_at,
-        providers (
-          practice_name,
-          provider_type
-        )
-      `)
+      .select('*')
       .eq('member_id', memberId)
       .order('submission_date', { ascending: false })
       .limit(limit);
 
     // Apply filters
     if (status) {
-      query = query.eq('claim_status', status);
+      query = query.eq('status', status);
     }
 
     if (dateFrom) {
@@ -73,23 +52,52 @@ export async function GET(request: NextRequest) {
       throw error;
     }
 
+    const providerIds = [...new Set((claims || []).map((claim) => claim.provider_id).filter(Boolean))];
+    const { data: providers } = providerIds.length > 0
+      ? await supabase
+          .from('providers')
+          .select('id, practice_name, type')
+          .in('id', providerIds)
+      : { data: [] as any[] };
+
+    const providersMap = new Map((providers || []).map((provider: any) => [provider.id, provider]));
+
+    const normalizedClaims = (claims || []).map((claim: any) => ({
+      ...claim,
+      benefit_type: claim.benefit_type || claim.claim_type,
+      claim_status: claim.status,
+      pend_reason: claim.pended_reason,
+      approved_date: claim.approved_at,
+      providers: claim.provider_id
+        ? (() => {
+            const provider = providersMap.get(claim.provider_id);
+            return provider
+              ? {
+                  practice_name: provider.practice_name,
+                  provider_type: provider.type,
+                }
+              : null;
+          })()
+        : null,
+    }));
+
     // Calculate statistics
     const stats = {
-      total: claims?.length || 0,
-      submitted: claims?.filter(c => c.claim_status === 'submitted').length || 0,
-      pending: claims?.filter(c => c.claim_status === 'pending').length || 0,
-      approved: claims?.filter(c => c.claim_status === 'approved').length || 0,
-      paid: claims?.filter(c => c.claim_status === 'paid').length || 0,
-      rejected: claims?.filter(c => c.claim_status === 'rejected').length || 0,
-      pended: claims?.filter(c => c.claim_status === 'pended').length || 0,
-      total_claimed: claims?.reduce((sum, c) => sum + parseFloat(c.claimed_amount || '0'), 0) || 0,
-      total_approved: claims?.reduce((sum, c) => sum + parseFloat(c.approved_amount || '0'), 0) || 0,
-      total_paid: claims?.filter(c => c.claim_status === 'paid')
+      total: normalizedClaims.length || 0,
+      submitted: normalizedClaims.filter(c => c.claim_status === 'submitted').length || 0,
+      pending: normalizedClaims.filter(c => c.claim_status === 'pending').length || 0,
+      approved: normalizedClaims.filter(c => c.claim_status === 'approved').length || 0,
+      paid: normalizedClaims.filter(c => c.claim_status === 'paid').length || 0,
+      rejected: normalizedClaims.filter(c => c.claim_status === 'rejected').length || 0,
+      pended: normalizedClaims.filter(c => c.claim_status === 'pended').length || 0,
+      total_claimed: normalizedClaims.reduce((sum, c) => sum + parseFloat(c.claimed_amount || '0'), 0) || 0,
+      total_approved: normalizedClaims.reduce((sum, c) => sum + parseFloat(c.approved_amount || '0'), 0) || 0,
+      total_paid: normalizedClaims.filter(c => c.claim_status === 'paid')
         .reduce((sum, c) => sum + parseFloat(c.approved_amount || '0'), 0) || 0
     };
 
     return NextResponse.json({
-      claims: claims || [],
+      claims: normalizedClaims,
       stats
     });
 

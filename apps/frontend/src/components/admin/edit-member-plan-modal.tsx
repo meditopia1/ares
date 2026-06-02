@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { authFetch } from '@/lib/auth-fetch';
 
 interface Product {
   id: string;
@@ -36,7 +37,7 @@ export function EditMemberPlanModal({ member, isOpen, onClose, onSave }: EditMem
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('/api/admin/products');
+      const response = await authFetch('/api/admin/products');
       const data = await response.json();
       setProducts(data.products || []);
     } catch (error) {
@@ -54,7 +55,7 @@ export function EditMemberPlanModal({ member, isOpen, onClose, onSave }: EditMem
 
     setSaving(true);
     try {
-      const response = await fetch(`/api/admin/members/${member.id}`, {
+      const response = await authFetch(`/api/admin/members/${member.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ planId: selectedPlanId }),

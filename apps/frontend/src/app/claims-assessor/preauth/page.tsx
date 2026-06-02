@@ -7,6 +7,7 @@ import { SidebarLayout } from '@/components/layout/sidebar-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { authFetch } from '@/lib/auth-fetch';
 import { Clock, CheckCircle, XCircle } from 'lucide-react';
 
 interface PreAuthRequest {
@@ -51,7 +52,7 @@ export default function PreAuthQueuePage() {
   const fetchPreAuthRequests = async () => {
     try {
       setLoadingRequests(true);
-      const response = await fetch('/api/claims-assessor/preauth');
+      const response = await authFetch('/api/claims-assessor/preauth');
       const data = await response.json();
       setRequests(data.requests || []);
     } catch (error) {
@@ -68,7 +69,7 @@ export default function PreAuthQueuePage() {
     }
 
     try {
-      await fetch(`/api/claims-assessor/preauth/${selectedRequest.id}`, {
+      await authFetch(`/api/claims-assessor/preauth/${selectedRequest.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -90,7 +91,7 @@ export default function PreAuthQueuePage() {
     if (!selectedRequest) return;
 
     try {
-      await fetch(`/api/claims-assessor/preauth/${selectedRequest.id}`, {
+      await authFetch(`/api/claims-assessor/preauth/${selectedRequest.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -112,7 +113,7 @@ export default function PreAuthQueuePage() {
     if (!selectedRequest) return;
 
     try {
-      await fetch(`/api/claims-assessor/preauth/${selectedRequest.id}`, {
+      await authFetch(`/api/claims-assessor/preauth/${selectedRequest.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

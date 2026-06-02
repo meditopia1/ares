@@ -20,7 +20,12 @@ import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import SignatureCanvas from 'react-signature-canvas'
 import { ApplicationData } from '@/types/application'
-import { uploadVoiceRecording, uploadSignature, generateTempApplicationNumber } from '@/lib/storage'
+import {
+  prepareApplicationAssetsForSubmit,
+  uploadVoiceRecording,
+  uploadSignature,
+  generateTempApplicationNumber,
+} from '@/lib/storage'
 
 interface Props {
   data: ApplicationData
@@ -216,18 +221,26 @@ export default function Step6ReviewTermsSubmit({ data, updateData, prevStep, goT
     setSubmitting(true)
     
     try {
+      const assetUpdates = await prepareApplicationAssetsForSubmit(data)
+      const submissionData = {
+        ...data,
+        ...assetUpdates,
+        termsAccepted: true,
+        marketingConsent,
+        marketingConsentDate: marketingConsent ? new Date().toISOString() : undefined,
+        emailConsent,
+        smsConsent,
+        phoneConsent,
+      }
+
+      if (Object.keys(assetUpdates).length > 0) {
+        updateData(assetUpdates)
+      }
+
       const response = await fetch('/api/applications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...data,
-          termsAccepted: true,
-          marketingConsent,
-          marketingConsentDate: marketingConsent ? new Date().toISOString() : undefined,
-          emailConsent,
-          smsConsent,
-          phoneConsent,
-        }),
+        body: JSON.stringify(submissionData),
       })
 
       if (!response.ok) throw new Error('Submission failed')
@@ -740,25 +753,29 @@ export default function Step6ReviewTermsSubmit({ data, updateData, prevStep, goT
         </div>
 
         {/* Submit Button */}
-        <div className="flex justify-between pt-2 pb-10">
-          <button
-            onClick={prevStep}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 font-medium"
-          >
+      <div className="flex justify-between pt-2 pb-10">
+        <button
+          onClick={prevStep}
+          className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 font-medium"
+        >
             Back
           </button>
-          <button
-            onClick={handleSubmit}
-            disabled={submitting || !voiceRecorded || !signatureSaved || !termsAccepted}
-            className={`px-6 py-2 rounded font-medium ${
-              submitting || !voiceRecorded || !signatureSaved || !termsAccepted
+        <button
+          onClick={handleSubmit}
+          disabled={submitting || uploadingVoice || uploadingSignature || !voiceRecorded || !signatureSaved || !termsAccepted}
+          className={`px-6 py-2 rounded font-medium ${
+              submitting || uploadingVoice || uploadingSignature || !voiceRecorded || !signatureSaved || !termsAccepted
                 ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
                 : 'bg-green-600 text-white hover:bg-green-700'
             }`}
-          >
-            {submitting ? '⏳ Submitting...' : '✓ Submit Application'}
-          </button>
-        </div>
+        >
+            {submitting
+              ? '⏳ Submitting...'
+              : uploadingVoice || uploadingSignature
+                ? '⏳ Finish Uploads First'
+                : '✓ Submit Application'}
+        </button>
+      </div>
       </div>
     </div>
   )

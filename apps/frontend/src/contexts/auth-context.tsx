@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Check if user is a provider first
       const { data: providerData } = await supabase
         .from('providers')
-        .select('id, name, login_email, user_id')
+        .select('id, name, practice_name, login_email, user_id')
         .eq('user_id', session.user.id)
         .single();
 

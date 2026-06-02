@@ -11,6 +11,8 @@ interface User {
   roles: string[];
   permissions: string[];
   authUserId?: string;
+  practiceName?: string;
+  providerNumber?: string;
 }
 
 interface AuthContextType {
@@ -29,6 +31,32 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function buildProviderUser(input: {
+  id: string;
+  email: string;
+  name?: string | null;
+  practiceName?: string | null;
+  providerNumber?: string | null;
+  authUserId?: string;
+}): User {
+  const displayName = (input.name || input.practiceName || input.email || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const nameParts = displayName.split(' ').filter(Boolean);
+
+  return {
+    id: input.id,
+    email: input.email,
+    firstName: nameParts[0] || '',
+    lastName: nameParts.slice(1).join(' ') || '',
+    roles: ['provider'],
+    permissions: [],
+    authUserId: input.authUserId,
+    practiceName: input.practiceName || undefined,
+    providerNumber: input.providerNumber || undefined,
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,6 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loadUser = async () => {
     console.log('🔄 Loading user...');
     setLoading(true);
+    let cachedProvider: User | null = null;
     try {
       // Check for provider session first (custom auth)
       if (typeof window !== 'undefined') {
@@ -50,9 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Check if session is less than 24 hours old
           if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
             console.log('✅ Provider session found');
-            setUser(provider);
-            setLoading(false);
-            return;
+            cachedProvider = provider;
           } else {
             // Session expired
             localStorage.removeItem('provider_session');
@@ -65,6 +92,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (sessionError || !session) {
         console.log('❌ No active session');
+        if (cachedProvider) {
+          setUser(cachedProvider);
+          setLoading(false);
+          return;
+        }
         setUser(null);
         setLoading(false);
         return;
@@ -75,26 +107,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Check if user is a provider first
       const { data: providerData } = await supabase
         .from('providers')
-        .select('id, name, practice_name, login_email, user_id')
+        .select('id, name, practice_name, provider_number, login_email, user_id')
         .eq('user_id', session.user.id)
-        .single();
+        .maybeSingle();
 
       if (providerData) {
         // User is a provider
         console.log('✅ Provider user found');
-        const providerName = providerData.name || providerData.practice_name || '';
-        const nameParts = providerName.split(' ').filter(Boolean);
-        const transformedUser: User = {
+        const transformedUser = buildProviderUser({
           id: providerData.id,
           email: providerData.login_email || session.user.email || '',
-          firstName: nameParts[0] || '',
-          lastName: nameParts.slice(1).join(' ') || '',
-          roles: ['provider'],
-          permissions: [],
+          name: providerData.name,
+          practiceName: providerData.practice_name,
+          providerNumber: providerData.provider_number,
           authUserId: session.user.id,
-        };
+        });
         console.log('✅ Provider data loaded:', transformedUser);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('provider_session', JSON.stringify({
+            provider: transformedUser,
+            timestamp: Date.now()
+          }));
+        }
         setUser(transformedUser);
+        setLoading(false);
+        return;
+      }
+
+      if (session.user.user_metadata?.role === 'provider') {
+        console.log('Provider metadata found, using fallback provider session');
+        const fallbackProvider = buildProviderUser({
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.user_metadata?.firstName || session.user.user_metadata?.first_name || '',
+          practiceName: session.user.user_metadata?.practiceName || session.user.user_metadata?.practice_name || '',
+          providerNumber: session.user.user_metadata?.providerNumber || session.user.user_metadata?.provider_number || '',
+          authUserId: session.user.id,
+        });
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('provider_session', JSON.stringify({
+            provider: fallbackProvider,
+            timestamp: Date.now()
+          }));
+        }
+        setUser(fallbackProvider);
         setLoading(false);
         return;
       }
@@ -104,7 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from('users')
         .select('id, email, is_active')
         .eq('email', session.user.email)
-        .single();
+        .maybeSingle();
 
       if (userError || !userData) {
         console.error('❌ Error loading user data:', userError);
@@ -155,7 +211,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(transformedUser);
     } catch (error) {
       console.error('❌ Error loading user:', error);
-      setUser(null);
+      setUser(cachedProvider);
     } finally {
       setLoading(false);
     }
@@ -180,22 +236,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .select('id, name, login_email, provider_number, practice_name')
         .eq('user_id', authData.user.id)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       if (provider) {
         // Provider login successful - create custom session
         console.log('✅ Provider login successful:', provider);
-        const providerName = provider.name || provider.practice_name || '';
-        const nameParts = providerName.split(' ').filter(Boolean);
-        const providerUser: User = {
+        const providerUser = buildProviderUser({
           id: provider.id,
-          email: provider.login_email || authData.user.email,
-          firstName: nameParts[0] || '',
-          lastName: nameParts.slice(1).join(' ') || '',
-          roles: ['provider'],
-          permissions: [],
+          email: provider.login_email || authData.user.email || email,
+          name: provider.name,
+          practiceName: provider.practice_name,
+          providerNumber: provider.provider_number,
           authUserId: authData.user.id,
-        };
+        });
 
         // Store provider session in localStorage
         if (typeof window !== 'undefined') {
@@ -206,6 +259,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         setUser(providerUser);
+      } else if (authData.user.user_metadata?.role === 'provider') {
+        const fallbackProvider = buildProviderUser({
+          id: authData.user.id,
+          email: authData.user.email || email,
+          name: authData.user.user_metadata?.firstName || authData.user.user_metadata?.first_name || '',
+          practiceName: authData.user.user_metadata?.practiceName || authData.user.user_metadata?.practice_name || '',
+          providerNumber: authData.user.user_metadata?.providerNumber || authData.user.user_metadata?.provider_number || '',
+          authUserId: authData.user.id,
+        });
+
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('provider_session', JSON.stringify({
+            provider: fallbackProvider,
+            timestamp: Date.now()
+          }));
+        }
+
+        setUser(fallbackProvider);
       } else {
         // Staff login successful
         await loadUser();

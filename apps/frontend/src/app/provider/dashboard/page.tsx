@@ -85,6 +85,12 @@ export default function ProviderDashboardPage() {
   }
 
   const pendingItems: any[] = [];
+  const providerDisplayName = [user.firstName, user.lastName]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(' ') || user.email;
+  const providerPracticeName = user.practiceName?.trim() || '';
+  const providerNumber = user.providerNumber?.trim() || '';
 
   return (
     <SidebarLayout>
@@ -93,9 +99,37 @@ export default function ProviderDashboardPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Provider Dashboard</h1>
           <p className="text-gray-600 mt-1">
-            Welcome back, Dr. {user.lastName}
+            Welcome back, {providerDisplayName}
           </p>
+          {(providerPracticeName || providerNumber) && (
+            <p className="text-sm text-gray-500 mt-1">
+              {providerPracticeName && <span>{providerPracticeName}</span>}
+              {providerPracticeName && providerNumber && <span> • </span>}
+              {providerNumber && <span>Provider No: {providerNumber}</span>}
+            </p>
+          )}
         </div>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Your Provider Profile</CardDescription>
+            <CardTitle className="text-2xl">{providerDisplayName}</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <p className="text-xs text-muted-foreground">Email</p>
+              <p className="font-medium text-gray-900 break-all">{user.email}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Practice</p>
+              <p className="font-medium text-gray-900">{providerPracticeName || 'Not set'}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Provider Number</p>
+              <p className="font-medium text-gray-900">{providerNumber || 'Not set'}</p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

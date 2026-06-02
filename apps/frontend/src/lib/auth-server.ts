@@ -16,6 +16,8 @@ export interface AuthenticatedUser {
   permissions: string[];
   isProvider: boolean;
   providerId?: string;
+  providerNumber?: string;
+  practiceName?: string;
 }
 
 export interface AuthResult {
@@ -75,9 +77,9 @@ export async function getAuthenticatedUser(request: NextRequest): Promise<AuthRe
     // Check if user is a provider
     const { data: providerData } = await supabase
       .from('providers')
-      .select('id, name, login_email, user_id')
+      .select('id, name, login_email, provider_number, practice_name, user_id')
       .eq('user_id', authUser.id)
-      .single();
+      .maybeSingle();
 
     if (providerData) {
       // User is a provider
@@ -88,7 +90,23 @@ export async function getAuthenticatedUser(request: NextRequest): Promise<AuthRe
           roles: ['provider'],
           permissions: [],
           isProvider: true,
-          providerId: providerData.id
+          providerId: providerData.id,
+          providerNumber: providerData.provider_number || undefined,
+          practiceName: providerData.practice_name || undefined
+        },
+        error: null
+      };
+    }
+
+    if (authUser.user_metadata?.role === 'provider') {
+      return {
+        user: {
+          id: authUser.id,
+          email: authUser.email || '',
+          roles: ['provider'],
+          permissions: [],
+          isProvider: true,
+          providerId: authUser.id
         },
         error: null
       };
@@ -99,7 +117,7 @@ export async function getAuthenticatedUser(request: NextRequest): Promise<AuthRe
       .from('users')
       .select('id, email, is_active')
       .eq('email', authUser.email)
-      .single();
+      .maybeSingle();
 
     if (userError || !userData) {
       return {

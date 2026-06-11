@@ -43,7 +43,7 @@ This means provider-specific RLS is only safely enforceable for linked provider 
 
 ### Member self-access is not yet linkable
 
-Members are still using a custom mobile and PIN login flow in [apps/frontend/src/app/api/member/login/route.ts](/e:/wind new/day1main/apps/frontend/src/app/api/member/login/route.ts:1).
+Members are still using a custom email and PIN login flow in [apps/frontend/src/app/api/member/login/route.ts](/e:/wind new/day1main/apps/frontend/src/app/api/member/login/route.ts:1).
 
 Live data confirms:
 

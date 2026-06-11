@@ -16,25 +16,26 @@ const supabaseAdmin = createClient(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { mobile, pin } = body;
+    const { email, pin } = body;
+    const normalizedEmail = typeof email === 'string' ? email.trim() : '';
 
-    if (!mobile || !pin) {
+    if (!normalizedEmail || !pin) {
       return NextResponse.json(
-        { error: 'Mobile number and PIN are required' },
+        { error: 'Email and PIN are required' },
         { status: 400 }
       );
     }
 
-    // Find member by mobile number
+    // Find member by email
     const { data: member, error } = await supabaseAdmin
       .from('members')
       .select('*')
-      .eq('mobile', mobile)
+      .ilike('email', normalizedEmail)
       .single();
 
     if (error || !member) {
       return NextResponse.json(
-        { error: 'Invalid mobile number or PIN' },
+        { error: 'Invalid email or PIN' },
         { status: 401 }
       );
     }
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
         .eq('id', member.id);
 
       return NextResponse.json(
-        { error: 'Invalid mobile number or PIN' },
+        { error: 'Invalid email or PIN' },
         { status: 401 }
       );
     }
@@ -102,6 +103,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      session_token: member.id,
       member: memberData,
       message: 'Login successful'
     });

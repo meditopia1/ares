@@ -19,7 +19,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
  * - /api/marketing/*
  * 
  * Unprotected routes (in development):
- * - /api/member/* (custom PIN auth - not ready)
+ * - /api/member/* (custom email and PIN auth)
  * - /api/provider/* (custom provider auth - not ready)
  * - /api/applications (public application submission)
  * - /api/products (public product listing)

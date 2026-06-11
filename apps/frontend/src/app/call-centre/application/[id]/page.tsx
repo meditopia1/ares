@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { User, MapPin, FileText, Users, CreditCard, CheckCircle, Phone, Mic, Square, Play, Upload } from 'lucide-react';
+import { User, MapPin, FileText, Users, CreditCard, CheckCircle, Phone, Mic, Square, Play, Upload, Heart } from 'lucide-react';
 import { authFetch } from '@/lib/auth-fetch';
 
 interface Application {
@@ -37,6 +37,13 @@ interface Application {
   debit_order_day: number;
   collection_method: string;
   medical_history: any;
+  voice_recording_url?: string;
+  signature_url?: string;
+  terms_accepted_at?: string;
+  marketing_consent?: boolean;
+  email_consent?: boolean;
+  sms_consent?: boolean;
+  phone_consent?: boolean;
 }
 
 export default function CallCentreApplicationDetailPage() {
@@ -456,6 +463,199 @@ export default function CallCentreApplicationDetailPage() {
                   <p className="text-sm text-gray-500">No proof of address uploaded</p>
                 </div>
               )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Medical History */}
+        {application.medical_history && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Heart className="w-5 h-5" />
+                Medical History
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4 text-sm">
+                <div>
+                  <p className="font-medium text-gray-700">Chronic Medication:</p>
+                  <p className="text-gray-600">{application.medical_history.chronicMedication === 'yes' ? 'Yes' : 'No'}</p>
+                  {application.medical_history.chronicMedication === 'yes' && application.medical_history.chronicEntries?.length > 0 && (
+                    <div className="ml-2 mt-1 space-y-1">
+                      {application.medical_history.chronicEntries.map((entry: any, idx: number) => (
+                        <div key={idx} className="text-xs bg-gray-50 p-2 rounded">
+                          <p><strong>{entry.person}:</strong> {entry.condition} - {entry.medication}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <p className="font-medium text-gray-700">Other Medical Treatment:</p>
+                  <p className="text-gray-600">{application.medical_history.otherTreatment === 'yes' ? 'Yes' : 'No'}</p>
+                  {application.medical_history.otherTreatment === 'yes' && application.medical_history.otherEntries?.length > 0 && (
+                    <div className="ml-2 mt-1 space-y-1">
+                      {application.medical_history.otherEntries.map((entry: any, idx: number) => (
+                        <div key={idx} className="text-xs bg-gray-50 p-2 rounded">
+                          <p><strong>{entry.person}:</strong> {entry.condition} - {entry.medication}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <p className="font-medium text-gray-700">Dental Treatment:</p>
+                  <p className="text-gray-600">{application.medical_history.dentalTreatment === 'yes' ? 'Yes' : 'No'}</p>
+                  {application.medical_history.dentalTreatment === 'yes' && application.medical_history.dentalEntries?.length > 0 && (
+                    <div className="ml-2 mt-1 space-y-1">
+                      {application.medical_history.dentalEntries.map((entry: any, idx: number) => (
+                        <div key={idx} className="text-xs bg-gray-50 p-2 rounded">
+                          <p><strong>{entry.person}:</strong> {entry.condition} - {entry.medication}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <p className="font-medium text-gray-700">Future Medical Concerns:</p>
+                  <p className="text-gray-600">{application.medical_history.futureConcerns === 'yes' ? 'Yes' : 'No'}</p>
+                  {application.medical_history.futureConcerns === 'yes' && application.medical_history.futureEntries?.length > 0 && (
+                    <div className="ml-2 mt-1 space-y-1">
+                      {application.medical_history.futureEntries.map((entry: any, idx: number) => (
+                        <div key={idx} className="text-xs bg-gray-50 p-2 rounded">
+                          <p><strong>{entry.person}:</strong> {entry.condition} - {entry.medication}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <p className="font-medium text-gray-700">Pregnancy:</p>
+                  <p className="text-gray-600">{application.medical_history.pregnancy === 'yes' ? 'Yes' : 'No'}</p>
+                  {application.medical_history.pregnancy === 'yes' && application.medical_history.pregnancyEntries?.length > 0 && (
+                    <div className="ml-2 mt-1 space-y-1">
+                      {application.medical_history.pregnancyEntries.map((entry: any, idx: number) => (
+                        <div key={idx} className="text-xs bg-gray-50 p-2 rounded">
+                          <p><strong>{entry.person}:</strong> Due Date: {entry.dueDate}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <p className="font-medium text-gray-700">Major Operations (past 5 years):</p>
+                  <p className="text-gray-600">{application.medical_history.majorOperations === 'yes' ? 'Yes' : 'No'}</p>
+                  {application.medical_history.majorOperations === 'yes' && application.medical_history.operationEntries?.length > 0 && (
+                    <div className="ml-2 mt-1 space-y-1">
+                      {application.medical_history.operationEntries.map((entry: any, idx: number) => (
+                        <div key={idx} className="text-xs bg-gray-50 p-2 rounded">
+                          <p><strong>{entry.person}:</strong> {entry.procedure} ({entry.date})</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <p className="font-medium text-gray-700">Hospital Admissions (past 5 years):</p>
+                  <p className="text-gray-600">{application.medical_history.hospitalAdmissions === 'yes' ? 'Yes' : 'No'}</p>
+                  {application.medical_history.hospitalAdmissions === 'yes' && application.medical_history.hospitalEntries?.length > 0 && (
+                    <div className="ml-2 mt-1 space-y-1">
+                      {application.medical_history.hospitalEntries.map((entry: any, idx: number) => (
+                        <div key={idx} className="text-xs bg-gray-50 p-2 rounded">
+                          <p><strong>{entry.person}:</strong> {entry.reason} ({entry.date})</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <p className="font-medium text-gray-700">Medical Aid/Hospital Plan Member:</p>
+                  <p className="text-gray-600">{application.medical_history.medicalAidMember === 'yes' ? 'Yes' : 'No'}</p>
+                  {application.medical_history.medicalAidMember === 'yes' && application.medical_history.medicalAidEntries?.length > 0 && (
+                    <div className="ml-2 mt-1 space-y-1">
+                      {application.medical_history.medicalAidEntries.map((entry: any, idx: number) => (
+                        <div key={idx} className="text-xs bg-gray-50 p-2 rounded">
+                          <p><strong>{entry.person}:</strong> {entry.schemeName} (since {entry.inceptionDate})</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Applicant Voice and Signature */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5" />
+              Applicant Consent Evidence
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="p-3 bg-gray-50 rounded">
+                <p className="text-sm font-medium mb-2">Applicant Voice Confirmation</p>
+                {application.voice_recording_url ? (
+                  <div className="space-y-2">
+                    <audio controls className="w-full" preload="metadata">
+                      <source src={application.voice_recording_url} />
+                      Your browser does not support the audio element.
+                    </audio>
+                    <p className="text-xs text-gray-600">
+                      Recorded: {application.terms_accepted_at ? new Date(application.terms_accepted_at).toLocaleString() : 'N/A'}
+                    </p>
+                  </div>
+                ) : (
+                  <span className="text-sm text-gray-500">No applicant voice confirmation</span>
+                )}
+              </div>
+
+              <div className="p-3 bg-gray-50 rounded">
+                <p className="text-sm font-medium mb-2">Digital Signature</p>
+                {application.signature_url ? (
+                  <div className="space-y-2">
+                    <div className="border border-gray-300 rounded bg-white p-2">
+                      <img
+                        src={application.signature_url}
+                        alt="Digital Signature"
+                        className="max-h-24 mx-auto"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-600">
+                      Signed: {application.terms_accepted_at ? new Date(application.terms_accepted_at).toLocaleString() : 'N/A'}
+                    </p>
+                  </div>
+                ) : (
+                  <span className="text-sm text-gray-500">No digital signature</span>
+                )}
+              </div>
+
+              <div className="p-3 bg-blue-50 rounded border border-blue-200">
+                <p className="text-sm font-medium mb-2">Marketing Consent</p>
+                <div className="space-y-1 text-sm">
+                  <p className="text-gray-700">
+                    {application.marketing_consent ? 'Opted in for marketing communications' : 'Not opted in'}
+                  </p>
+                  {application.marketing_consent && (
+                    <>
+                      <p className="text-gray-600">Email: {application.email_consent ? 'Yes' : 'No'}</p>
+                      <p className="text-gray-600">SMS: {application.sms_consent ? 'Yes' : 'No'}</p>
+                      <p className="text-gray-600">Phone: {application.phone_consent ? 'Yes' : 'No'}</p>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

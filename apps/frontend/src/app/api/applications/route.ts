@@ -43,21 +43,45 @@ export async function POST(request: NextRequest) {
       data.debitOrderDay = parseInt(data.debitOrderDay)
     }
     
-    // Find contact_id (created in Step 1)
-    console.log('🔍 Looking up contact by email:', data.email)
-    const { data: contact, error: contactError } = await supabaseAdmin
+    // Find or create the contact record that satisfies the applications.contact_id constraint.
+    console.log('🔍 Looking up contact by email/id number:', data.email, data.idNumber)
+    const { data: matchingContacts, error: contactError } = await supabaseAdmin
       .from('contacts')
-      .select('id')
-      .eq('email', data.email)
-      .maybeSingle()
+      .select('id, email, id_number')
+      .or(`email.eq.${data.email},id_number.eq.${data.idNumber}`)
 
     if (contactError) {
       console.error('❌ Contact lookup error:', contactError)
       throw contactError
     }
 
-    const contactId = contact?.id || null
-    console.log('✅ Contact found:', contactId)
+    let contactId = matchingContacts?.[0]?.id || null
+
+    if (!contactId) {
+      console.log('🆕 No matching contact found, creating one for the application...')
+      const { data: newContact, error: createContactError } = await supabaseAdmin
+        .from('contacts')
+        .insert({
+          first_name: data.firstName,
+          last_name: data.lastName,
+          email: data.email,
+          mobile: data.mobile,
+          id_number: data.idNumber,
+          is_lead: true,
+          source: data.source || 'website_application',
+        })
+        .select('id')
+        .single()
+
+      if (createContactError) {
+        console.error('❌ Failed to create contact for application:', createContactError)
+        throw createContactError
+      }
+
+      contactId = newContact.id
+    }
+
+    console.log('✅ Contact resolved for application:', contactId)
 
     // Create application record
     console.log('📄 Creating application record...')

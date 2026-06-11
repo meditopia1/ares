@@ -24,7 +24,7 @@ export default function MemberClaimSubmissionPage() {
     const memberDataStr = localStorage.getItem('member_data');
     
     if (!memberSession || !memberDataStr) {
-      router.push('/member-login');
+      router.push('/login');
       return;
     }
 
@@ -33,7 +33,7 @@ export default function MemberClaimSubmissionPage() {
       setMemberData(data);
     } catch (error) {
       console.error('Error parsing member data:', error);
-      router.push('/member-login');
+      router.push('/login');
     }
   }, [router]);
 

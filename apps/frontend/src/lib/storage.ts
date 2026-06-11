@@ -8,7 +8,6 @@
  */
 
 import { ApplicationData } from '@/types/application'
-import { supabase } from '@/lib/supabase'
 
 const BUCKET_NAME = 'applications'
 
@@ -22,25 +21,37 @@ export async function uploadToStorage(
   blob: Blob,
   path: string
 ): Promise<string> {
-  // Upload the file with extended timeout
-  const { data, error } = await supabase.storage
-    .from(BUCKET_NAME)
-    .upload(path, blob, {
-      cacheControl: '3600',
-      upsert: true,
-    })
+  const normalizedPath = path.replace(/^\/+/, '')
+  const lastSlash = normalizedPath.lastIndexOf('/')
+  const folder = lastSlash >= 0 ? normalizedPath.slice(0, lastSlash) : ''
+  const filename =
+    lastSlash >= 0 ? normalizedPath.slice(lastSlash + 1) : normalizedPath
 
-  if (error) {
-    console.error('Storage upload error:', error)
-    throw new Error(`Failed to upload file: ${error.message}`)
+  const file = new File([blob], filename || `upload-${Date.now()}`, {
+    type: blob.type || 'application/octet-stream',
+  })
+
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('bucket', BUCKET_NAME)
+
+  if (folder) {
+    formData.append('folder', folder)
   }
 
-  // Get the public URL
-  const { data: urlData } = supabase.storage
-    .from(BUCKET_NAME)
-    .getPublicUrl(path)
+  const response = await fetch('/api/upload', {
+    method: 'POST',
+    body: formData,
+  })
 
-  return urlData.publicUrl
+  const result = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    const message = result?.details || result?.error || `HTTP ${response.status}`
+    throw new Error(`Failed to upload file: ${message}`)
+  }
+
+  return result.url
 }
 
 /**

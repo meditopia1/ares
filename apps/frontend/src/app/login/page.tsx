@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,10 +16,14 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [memberEmail, setMemberEmail] = useState('');
+  const [memberPin, setMemberPin] = useState('');
   
   // Common state
   const [error, setError] = useState('');
+  const [memberError, setMemberError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [memberLoading, setMemberLoading] = useState(false);
 
   // Prevent caching of this page
   useEffect(() => {
@@ -46,6 +51,37 @@ export default function LoginPage() {
       console.error('Login error:', err);
       setError(err.message || 'Login failed. Please check your credentials.');
       setLoading(false);
+    }
+  };
+
+  const handleMemberLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMemberError('');
+    setMemberLoading(true);
+
+    try {
+      const response = await fetch('/api/member/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: memberEmail, pin: memberPin }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMemberError(data.error || 'Login failed. Please check your credentials.');
+        return;
+      }
+
+      localStorage.setItem('member_session', data.session_token || data.member?.id || '');
+      localStorage.setItem('member_data', JSON.stringify(data.member));
+
+      window.location.href = '/member/dashboard';
+    } catch (err: any) {
+      console.error('Member login error:', err);
+      setMemberError(err.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setMemberLoading(false);
     }
   };
 
@@ -143,15 +179,71 @@ export default function LoginPage() {
             </CardContent>
           </Card>          <Card className="w-full">
             <CardHeader>
-              <CardTitle className="text-xl text-center">Test Credentials</CardTitle>
+              <CardTitle className="text-xl text-center">Member Login</CardTitle>
               <CardDescription className="text-center">
-                Ask the project administrator for test credentials.
+                Use your email address and PIN to access the member portal.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-gray-600 text-center">
-                Demo emails and passwords are not shown in the production-facing UI.
-              </p>
+              <form onSubmit={handleMemberLogin} className="space-y-4">
+                {memberError && (
+                  <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+                    {memberError}
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <label htmlFor="member-email" className="text-sm font-medium">
+                    Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      id="member-email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={memberEmail}
+                      onChange={(e) => setMemberEmail(e.target.value)}
+                      required
+                      disabled={memberLoading}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="member-pin" className="text-sm font-medium">
+                    PIN
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      id="member-pin"
+                      type="password"
+                      placeholder="1234"
+                      value={memberPin}
+                      onChange={(e) => setMemberPin(e.target.value)}
+                      required
+                      disabled={memberLoading}
+                      className="pl-10"
+                      maxLength={6}
+                    />
+                  </div>
+                </div>
+
+                <Button type="submit" className="w-full" disabled={memberLoading}>
+                  {memberLoading ? 'Signing in...' : 'Member Sign In'}
+                </Button>
+              </form>
+
+              <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-3">
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-blue-800">
+                    Member login uses email and PIN. If you reach this page from an old member link, it will still work here.
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>

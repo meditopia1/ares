@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     // Verify member exists and is active
     const { data: member, error: memberError } = await supabaseAdmin
       .from('members')
-      .select('id, member_number, status, plan_name, plan_id')
+      .select('id, member_number, status, payment_status, plan_name, plan_id')
       .eq('id', body.member_id)
       .single();
 
@@ -63,9 +63,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (member.status !== 'active') {
+    const effectiveStatus = typeof member.payment_status === 'string' && member.payment_status.trim().toLowerCase() === 'active'
+      ? 'active'
+      : 'suspended';
+
+    if (effectiveStatus !== 'active') {
       return NextResponse.json(
-        { error: 'Member is not active' },
+        { error: 'Member is suspended' },
         { status: 400 }
       );
     }

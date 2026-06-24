@@ -23,6 +23,7 @@ export default function ClaimSubmissionPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [claimNumber, setClaimNumber] = useState('');
   const [uploadProgress, setUploadProgress] = useState<string>('');
+  const [showSubmissionGuide, setShowSubmissionGuide] = useState(false);
 
   // Benefit validation
   const { validateBenefit, validating, validationResult, clearValidation } = useBenefitValidation();
@@ -45,6 +46,7 @@ export default function ClaimSubmissionPage() {
   const [memberNumber, setMemberNumber] = useState('');
   const [patientName, setPatientName] = useState('');
   const [idNumber, setIdNumber] = useState('');
+  const [memberPlanName, setMemberPlanName] = useState('');
 
   // Dynamic form data based on selected claim type
   const [formData, setFormData] = useState<Record<string, any>>({});
@@ -85,6 +87,7 @@ export default function ClaimSubmissionPage() {
     setMemberNumber('');
     setPatientName('');
     setIdNumber('');
+    setMemberPlanName('');
   };
 
   const handleMemberLookup = async () => {
@@ -132,11 +135,12 @@ export default function ClaimSubmissionPage() {
       setMemberNumber(member.member_number || '');
       setPatientName(fullName || query);
       setIdNumber(member.id_number || '');
+      setMemberPlanName(member.plan_name || '');
       setLookupStatus(member.status || (data.eligible ? 'active' : 'suspended'));
       setLookupMessage(
         data.eligible
           ? 'Member is active and eligible'
-          : data.message || `Member status is ${member.status || 'unknown'}`
+          : data.message || `Member status is ${member.status || 'suspended'}`
       );
     } catch (error) {
       console.error('Member lookup error:', error);
@@ -545,7 +549,7 @@ export default function ClaimSubmissionPage() {
               <CardDescription>Enter patient details for claim submission</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <label htmlFor="memberNumber" className="text-sm font-medium">
                     Member Number <span className="text-red-500">*</span>
@@ -577,6 +581,17 @@ export default function ClaimSubmissionPage() {
                     placeholder="8001015800083"
                     value={idNumber}
                     onChange={(e) => setIdNumber(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="memberPlanName" className="text-sm font-medium">
+                    Plan Name
+                  </label>
+                  <Input
+                    id="memberPlanName"
+                    placeholder="DAY1 Executive Plan"
+                    value={memberPlanName}
+                    onChange={(e) => setMemberPlanName(e.target.value)}
                   />
                 </div>
               </div>
@@ -839,36 +854,46 @@ export default function ClaimSubmissionPage() {
 
         {/* Information Card */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
             <CardTitle>Claim Submission Guidelines</CardTitle>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSubmissionGuide((current) => !current)}
+            >
+              {showSubmissionGuide ? 'Show less' : 'Read more'}
+            </Button>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3 text-sm text-gray-600">
-              <div>
-                <p className="font-medium text-gray-900">Required Information:</p>
-                <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
-                  <li>Valid member number and patient details</li>
-                  <li>Service date (must be within last 4 months)</li>
-                  <li>ICD-10 diagnosis codes (where applicable)</li>
-                  <li>Procedure codes</li>
-                  <li>Accurate pricing information</li>
-                </ul>
+          {showSubmissionGuide && (
+            <CardContent>
+              <div className="space-y-3 text-sm text-gray-600">
+                <div>
+                  <p className="font-medium text-gray-900">Required Information:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
+                    <li>Valid member number and patient details</li>
+                    <li>Service date (must be within last 4 months)</li>
+                    <li>ICD-10 diagnosis codes (where applicable)</li>
+                    <li>Procedure codes</li>
+                    <li>Accurate pricing information</li>
+                  </ul>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">Supporting Documents:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
+                    <li>Invoice or receipt</li>
+                    <li>Prescription (if applicable)</li>
+                    <li>Clinical notes (for complex procedures)</li>
+                    <li>Pre-authorization approval (if required)</li>
+                  </ul>
+                </div>
+                <p className="text-xs text-gray-500 mt-4">
+                  Claims are typically processed within 5-7 business days. You will receive email
+                  notifications on claim status updates.
+                </p>
               </div>
-              <div>
-                <p className="font-medium text-gray-900">Supporting Documents:</p>
-                <ul className="list-disc list-inside space-y-1 ml-2 mt-1">
-                  <li>Invoice or receipt</li>
-                  <li>Prescription (if applicable)</li>
-                  <li>Clinical notes (for complex procedures)</li>
-                  <li>Pre-authorization approval (if required)</li>
-                </ul>
-              </div>
-              <p className="text-xs text-gray-500 mt-4">
-                Claims are typically processed within 5-7 business days. You will receive email
-                notifications on claim status updates.
-              </p>
-            </div>
-          </CardContent>
+            </CardContent>
+          )}
         </Card>
       </div>
     </SidebarLayout>

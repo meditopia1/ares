@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
         id_number,
         date_of_birth,
         status,
+        payment_status,
         plan_name,
         monthly_premium,
         broker_code,
@@ -148,11 +149,34 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check if member is active
-    if (member.status !== 'active') {
+    // Derive member eligibility from the reflected payment status on the member record
+    const paymentStatus = typeof member.payment_status === 'string'
+      ? member.payment_status.trim().toLowerCase()
+      : '';
+    const effectiveStatus = paymentStatus === 'active' ? 'active' : 'suspended';
+    const persistedPaymentStatus = paymentStatus || effectiveStatus;
+
+    if (member.status !== effectiveStatus || member.payment_status !== persistedPaymentStatus) {
+      const { error: syncError } = await supabaseAdmin
+        .from('members')
+        .update({
+          status: effectiveStatus,
+          payment_status: persistedPaymentStatus
+        })
+        .eq('id', member.id);
+
+      if (syncError) {
+        console.error('Failed to sync member eligibility status:', syncError);
+      } else {
+        member.status = effectiveStatus;
+        member.payment_status = persistedPaymentStatus;
+      }
+    }
+
+    if (effectiveStatus !== 'active') {
       return NextResponse.json({
         eligible: false,
-        message: `Member status is ${member.status}`,
+        message: 'Member is suspended',
         member: {
           id: member.id,
           member_number: member.member_number,
@@ -160,7 +184,8 @@ export async function POST(request: NextRequest) {
           last_name: member.last_name,
           id_number: member.id_number,
           date_of_birth: member.date_of_birth,
-          status: member.status,
+          status: effectiveStatus,
+          payment_status: persistedPaymentStatus,
           plan_name: member.plan_name,
           monthly_premium: member.monthly_premium,
           broker_code: member.broker_code,
@@ -241,7 +266,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       eligible: true,
-      message: 'Member is eligible for services',
+      message: 'Member is active and eligible',
       member: {
         id: member.id,
         member_number: member.member_number,
@@ -249,7 +274,8 @@ export async function POST(request: NextRequest) {
         last_name: member.last_name,
         id_number: member.id_number,
         date_of_birth: member.date_of_birth,
-        status: member.status,
+        status: effectiveStatus,
+        payment_status: persistedPaymentStatus,
         plan_name: member.plan_name,
         monthly_premium: member.monthly_premium,
         broker_code: member.broker_code,

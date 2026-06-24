@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     // Find member
     let memberQuery = supabase
       .from('members')
-      .select('id, member_number, plan_id, plan_name, start_date, status');
+      .select('id, member_number, plan_id, plan_name, start_date, status, payment_status');
 
     if (memberId) {
       memberQuery = memberQuery.eq('id', memberId);
@@ -48,22 +48,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check member status
-    if (member.status !== 'active') {
+    // Derive member status from the reflected payment status on the member record
+    const paymentStatus = typeof member.payment_status === 'string'
+      ? member.payment_status.trim().toLowerCase()
+      : '';
+    const effectiveStatus = paymentStatus === 'active' ? 'active' : 'suspended';
+
+    if (effectiveStatus !== 'active') {
       return NextResponse.json({
         valid: false,
-        error: 'Member is not active',
-        reason: 'MEMBER_INACTIVE',
-        memberStatus: member.status
+        error: 'Member is suspended',
+        reason: 'MEMBER_SUSPENDED',
+        memberStatus: effectiveStatus,
+        planName: member.plan_name
       });
     }
 
+    let resolvedPlanId = member.plan_id;
+
+    if (!resolvedPlanId && member.plan_name) {
+      const { data: productByName } = await supabase
+        .from('products')
+        .select('id, name, status')
+        .eq('name', member.plan_name)
+        .maybeSingle();
+
+      resolvedPlanId = productByName?.id || null;
+    }
+
     // Check if member has a plan
-    if (!member.plan_id) {
+    if (!resolvedPlanId) {
       return NextResponse.json({
         valid: false,
-        error: 'Member does not have an active plan',
-        reason: 'NO_PLAN'
+        error: 'Member does not have a mapped plan',
+        reason: 'NO_PLAN',
+        planName: member.plan_name
       });
     }
 
@@ -71,7 +90,7 @@ export async function POST(request: NextRequest) {
     const { data: benefits, error: benefitsError } = await supabase
       .from('product_benefits')
       .select('*')
-      .eq('product_id', member.plan_id)
+      .eq('product_id', resolvedPlanId)
       .eq('type', benefitType);
 
     if (benefitsError) {
@@ -150,7 +169,7 @@ export async function POST(request: NextRequest) {
 
     // Determine overall validity
     const valid = 
-      member.status === 'active' &&
+      effectiveStatus === 'active' &&
       waitingPeriodPassed &&
       preExistingExclusionPassed &&
       !annualLimitExceeded &&
@@ -218,7 +237,7 @@ export async function POST(request: NextRequest) {
         id: member.id,
         memberNumber: member.member_number,
         planName: member.plan_name,
-        status: member.status,
+        status: effectiveStatus,
         startDate: member.start_date,
         daysSinceStart
       },

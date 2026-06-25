@@ -57,7 +57,10 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/admin/dashboard/') ||
     pathname.startsWith('/api/admin/members') ||
     pathname.startsWith('/api/admin/claims') ||
-    pathname.startsWith('/api/admin/products');
+    pathname.startsWith('/api/admin/products') ||
+    pathname.startsWith('/api/admin/providers') ||
+    pathname.startsWith('/api/admin/brokers') ||
+    pathname.startsWith('/api/admin/payment-groups');
   if (routeHandlesOwnAuth) {
     return NextResponse.next();
   }

@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { requireAnyRole } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAnyRole(request, ['admin', 'system_admin', 'operations_manager']);
     const supabase = createServerSupabaseClient()
     
     console.log('Fetching brokers...')
@@ -51,6 +53,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    await requireAnyRole(request, ['admin', 'system_admin']);
     const supabase = createServerSupabaseClient()
     const body = await request.json()
 

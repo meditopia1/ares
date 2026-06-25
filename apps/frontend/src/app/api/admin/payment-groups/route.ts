@@ -1,10 +1,12 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAnyRole } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    await requireAnyRole(request, ['admin', 'system_admin', 'operations_manager']);
     const supabase = createServerSupabaseClient();
     const { data, error } = await supabase
       .from('payment_groups')
@@ -20,8 +22,9 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    await requireAnyRole(request, ['admin', 'system_admin', 'operations_manager']);
     const supabase = createServerSupabaseClient();
     const body = await request.json();
 

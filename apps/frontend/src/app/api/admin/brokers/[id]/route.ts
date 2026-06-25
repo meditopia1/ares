@@ -45,11 +45,20 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  return NextResponse.json(
-    {
-      error: 'Broker deletion is disabled. Use inactive/archived status instead.',
-      code: 'DELETE_DISABLED'
-    },
-    { status: 403 }
-  );
+  try {
+    await requireAnyRole(request, ['admin', 'system_admin']);
+    return NextResponse.json(
+      {
+        error: 'Broker deletion is disabled. Use inactive/archived status instead.',
+        code: 'DELETE_DISABLED'
+      },
+      { status: 403 }
+    );
+  } catch (error: any) {
+    console.error('Error deleting broker:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to delete broker' },
+      { status: 500 }
+    );
+  }
 }

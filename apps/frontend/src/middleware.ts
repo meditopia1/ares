@@ -54,8 +54,8 @@ export async function middleware(request: NextRequest) {
 
   const routeHandlesOwnAuth =
     pathname === '/api/admin/applications' ||
-    pathname.startsWith('/api/admin/dashboard/');
-
+    pathname.startsWith('/api/admin/dashboard/') ||
+    pathname.startsWith('/api/admin/members');
   if (routeHandlesOwnAuth) {
     return NextResponse.next();
   }

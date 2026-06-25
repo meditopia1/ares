@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { requireAnyRole } from '@/lib/auth-server';
 import { buildStarterPolicySections } from '@/lib/policy-section-templates'
 
 export const dynamic = 'force-dynamic'
@@ -78,8 +79,9 @@ function inferCategory(name: string) {
   return 'general'
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    await requireAnyRole(request, ['admin', 'system_admin']);
     const supabaseAdmin = createServerSupabaseClient()
     
     const { data: products, error } = await supabaseAdmin
@@ -107,6 +109,7 @@ export async function POST(request: NextRequest) {
   let createdProductId: string | null = null
 
   try {
+    await requireAnyRole(request, ['admin', 'system_admin']);
     const body = (await request.json()) as NewProductPayload
     const name = body.name?.trim()
     const code = body.code?.trim().toUpperCase()
@@ -261,3 +264,6 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+
+

@@ -1,13 +1,15 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { requireAnyRole } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    await requireAnyRole(request, ['admin', 'system_admin']);
     const supabaseAdmin = createServerSupabaseClient()
     
     const { data: benefits, error } = await supabaseAdmin
@@ -29,3 +31,7 @@ export async function GET(
     )
   }
 }
+
+
+
+

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { requireAnyRole } from '@/lib/auth-server';
 import { buildPolicySectionsFromBrochure } from '@/lib/policy-wording-import';
 
 export const dynamic = 'force-dynamic';
@@ -11,10 +12,11 @@ type SectionItemPayload = {
 };
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    await requireAnyRole(request, ['admin', 'system_admin']);
     const supabase = createServerSupabaseClient();
 
     const { data: product, error: productError } = await supabase
@@ -104,6 +106,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    await requireAnyRole(request, ['admin', 'system_admin']);
     const supabase = createServerSupabaseClient();
     const body = (await request.json()) as SectionItemPayload;
     const sectionType = body.sectionType?.trim();
@@ -157,3 +160,7 @@ export async function POST(
     );
   }
 }
+
+
+
+

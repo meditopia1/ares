@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { requireAnyRole } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,7 @@ export async function PUT(
   { params }: { params: { benefitId: string } }
 ) {
   try {
+    await requireAnyRole(request, ['admin', 'system_admin']);
     const supabase = createServerSupabaseClient();
     const body = (await request.json()) as BenefitUpdatePayload;
 
@@ -61,3 +63,5 @@ export async function PUT(
     );
   }
 }
+
+

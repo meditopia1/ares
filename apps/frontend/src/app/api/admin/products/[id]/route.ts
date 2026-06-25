@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { requireAnyRole } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +17,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    await requireAnyRole(request, ['admin', 'system_admin']);
     const supabase = createServerSupabaseClient()
     
     const { data: product, error } = await supabase
@@ -46,6 +48,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    await requireAnyRole(request, ['admin', 'system_admin']);
     const supabase = createServerSupabaseClient()
     const body = await request.json()
     const name = body.name?.trim()
@@ -116,3 +119,5 @@ export async function PUT(
     )
   }
 }
+
+

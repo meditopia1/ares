@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAnyRole } from '@/lib/auth-server';
 
 export async function POST(request: NextRequest) {
+  await requireAnyRole(request, ['admin', 'system_admin']);
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;

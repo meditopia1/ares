@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server'
+import { requireAnyRole } from '@/lib/auth-server';
+import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
@@ -46,7 +47,8 @@ function normalizeExclusions(value: unknown): string[] {
   return []
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  await requireAnyRole(request, ['admin', 'system_admin']);
   try {
     const supabaseAdmin = createServerSupabaseClient()
     const { searchParams } = new URL(request.url)

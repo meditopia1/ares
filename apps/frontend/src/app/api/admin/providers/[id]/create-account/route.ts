@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAnyRole } from '@/lib/auth-server';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -7,9 +8,10 @@ const supabase = createClient(
 );
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  await requireAnyRole(request, ['admin', 'system_admin']);
   try {
     const body = await request.json();
     const { email, password, firstName, lastName } = body;

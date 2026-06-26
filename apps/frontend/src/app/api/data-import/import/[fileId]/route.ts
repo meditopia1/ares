@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAnyRole } from '@/lib/auth-server';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { fileId: string } }
 ) {
+  await requireAnyRole(request, ['admin', 'system_admin']);
   try {
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/data-import/import/${params.fileId}`,

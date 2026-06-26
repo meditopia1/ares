@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAnyRole } from '@/lib/auth-server';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -7,6 +8,7 @@ const supabase = createClient(
 );
 
 export async function GET(request: NextRequest) {
+  await requireAnyRole(request, ['admin', 'system_admin']);
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || 'pending';

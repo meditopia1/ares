@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
@@ -261,9 +262,13 @@ export default function ClaimsAssessorDashboardPage() {
             ) : (
               <div className="space-y-3">
                 {recentClaims.map((claim) => (
-                  <div key={claim.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                  <Link
+                    key={claim.id}
+                    href={`/claims/${claim.id}`}
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 hover:border-green-300 transition-colors group"
+                  >
                     <div className="flex-1">
-                      <p className="font-medium">{claim.claim_number}</p>
+                      <p className="font-medium group-hover:text-green-700 transition-colors">{claim.claim_number}</p>
                       <p className="text-sm text-gray-600">
                         {claim.member?.first_name} {claim.member?.last_name} - {claim.provider?.name}
                       </p>
@@ -280,7 +285,7 @@ export default function ClaimsAssessorDashboardPage() {
                         {claim.status.toUpperCase()}
                       </span>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}

@@ -296,7 +296,7 @@ export default function AdminProvidersPage() {
 
                 {/* Login Credentials Section */}
                 <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold mb-4">Login Credentials (Optional)</h3>
+                  <h3 className="text-lg font-semibold mb-4">Auth Credentials (Optional)</h3>
                   <p className="text-sm text-gray-600 mb-4">Create a user account for this provider to access the provider portal</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -312,7 +312,7 @@ export default function AdminProvidersPage() {
                       <Input name="login_email" type="email" value={formData.login_email} onChange={handleFormChange} placeholder="provider@example.com" />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Password</label>
+                      <label className="text-sm font-medium">Auth Password</label>
                       <Input name="login_password" type="password" value={formData.login_password} onChange={handleFormChange} placeholder="Min 6 characters" />
                     </div>
                   </div>

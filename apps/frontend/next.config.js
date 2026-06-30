@@ -16,6 +16,12 @@ const nextConfig = {
         'jest-runtime': 'jest-runtime',
         '@jest/globals': '@jest/globals',
       });
+
+      config.resolve = config.resolve || {};
+      config.resolve.fallback = {
+        ...(config.resolve.fallback || {}),
+        ws: false,
+      };
     }
     return config;
   },

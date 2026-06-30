@@ -29,7 +29,6 @@ interface Provider {
   is_active: boolean;
   user_id: string | null;
   login_email: string | null;
-  login_password: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -469,53 +468,20 @@ export default function ProviderDetailPage() {
               <CardTitle>Login Credentials</CardTitle>
             </CardHeader>
             <CardContent>
-              {isEditing ? (
-                <div className="space-y-4">
-                  <p className="text-sm text-gray-600">Update login credentials for this provider</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Login Email</label>
-                      <Input
-                        name="login_email"
-                        type="email"
-                        value={formData.login_email || ''}
-                        onChange={handleChange}
-                        placeholder="provider@example.com"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Password</label>
-                      <Input
-                        name="login_password"
-                        type="text"
-                        value={formData.login_password || ''}
-                        onChange={handleChange}
-                        placeholder="Enter new password"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-gray-500">Note: Changing credentials will update the user account</p>
-                    <Button onClick={handleSave} disabled={isSaving}>
-                      {isSaving ? 'Saving...' : 'Save Credentials'}
-                    </Button>
-                  </div>
-                </div>
-              ) : provider.login_email ? (
+              {provider.login_email ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-600">Login Email</p>
                     <p className="text-gray-900 font-mono">{provider.login_email}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Password</p>
-                    <p className="text-gray-900 font-mono">{provider.login_password || '••••••••'}</p>
-                  </div>
-                  <div>
                     <p className="text-sm text-gray-600">Account Status</p>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${provider.user_id ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
                       {provider.user_id ? 'Active' : 'Not Created'}
                     </span>
+                  </div>
+                  <div className="md:col-span-2">
+                    <p className="text-xs text-gray-500">Passwords are managed in Supabase Auth and are not stored in the provider table.</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">User ID</p>
@@ -524,8 +490,8 @@ export default function ProviderDetailPage() {
                 </div>
               ) : (
                 <div className="text-center py-6">
-                  <p className="text-gray-500 mb-4">No login credentials configured</p>
-                  <p className="text-sm text-gray-400">Provider cannot access the provider portal</p>
+                  <p className="text-gray-500 mb-4">No login email configured</p>
+                  <p className="text-sm text-gray-400">Create or link a Supabase Auth account for this provider</p>
                 </div>
               )}
             </CardContent>

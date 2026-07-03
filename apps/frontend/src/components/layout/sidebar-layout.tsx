@@ -467,6 +467,16 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
           ),
         },
         {
+          name: 'Hospital Claims',
+          href: '/claims/hospital',
+          glowColor: '#14b8a6', // Teal
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m4 0v-5a2 2 0 00-2-2h0a2 2 0 00-2 2v5m2-13v4m-2-2h4" />
+            </svg>
+          ),
+        },
+        {
           name: 'Claims Queue',
           href: '/claims/queue',
           glowColor: '#22c55e', // Green

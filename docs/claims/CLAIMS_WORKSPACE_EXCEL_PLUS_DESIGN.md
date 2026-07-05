@@ -389,6 +389,166 @@ Show warnings when:
 
 ---
 
+## Proposed Africa Assist Direct GOP Intake
+
+This is a proposed alternative to long email inbox extraction if Africa Assist agrees to add an **Add GOP** button to their desktop/application.
+
+The goal is to let Africa Assist send GOP documents directly into the Day1 Hospital Claims intake queue instead of relying on emailed attachments.
+
+Recommended flow:
+
+```txt
+Africa Assist Add GOP button
+→ Secure Day1 GOP intake API
+→ Store original GOP document
+→ Scan/extract GOP fields
+→ Auto lookup member/provider/policy data
+→ Create New Intake notification in Hospital Claims workspace
+→ Claims officer reviews scan
+→ Claims officer clicks Add to claims
+```
+
+Africa Assist should send the GOP into an intake endpoint only. They should not write directly into the final claims table.
+
+Proposed endpoint:
+
+```txt
+POST /api/integrations/africa-assist/gop-intake
+```
+
+Expected payload:
+
+- GOP PDF or document attachment
+- Africa Assist reference
+- Authorisation number
+- Policy number
+- Member or patient identifiers if available
+- Hospital name and practice number if available
+- Admission date if available
+- Contact or case manager details if available
+
+Security requirements:
+
+- API key, signed token, or OAuth client credentials
+- Strict file type and size validation
+- Duplicate detection before creating an intake item
+- Full audit record for every submitted GOP
+- Original document stored permanently
+
+Workspace behavior:
+
+- Create a new intake item, not a final claim.
+- Mark it as new/unreviewed.
+- Show a notification count in the Hospital Claims workspace.
+- Run the same GOP scanning, validation, database lookup, and Add to claims review flow.
+
+If Africa Assist does not agree to this integration, remove this section and continue with the email inbox extraction approach.
+
+---
+
+## Authorization Portal Split
+
+The public login page should show **Authorizations** instead of **Ambulance**. The system then routes users by database role after login.
+
+Current demo roles:
+
+```txt
+ambulance_operator
+africa_assist_authorization
+```
+
+Current demo accounts:
+
+```txt
+ambu@out.com  → ambulance_operator
+afri@out.com  → africa_assist_authorization
+```
+
+These are temporary demo logins only. Replace with real company user details once Ambulance and Africa Assist access is confirmed.
+
+Both roles use the same Authorization workspace shell and member/policy verification pattern, but each role sees a different sidebar and benefit check.
+
+Implemented routes:
+
+```txt
+/authorizations/dashboard
+/authorizations/member-verification
+/authorizations/gop-intake
+/authorizations/history
+```
+
+The single `/authorizations/member-verification` route is the active verification and benefit check page. It changes label/output by role:
+
+```txt
+ambulance_operator → Ambulance Benefit Check
+africa_assist_authorization → Hospital Benefit Check
+```
+
+Legacy benefit routes may redirect back to `/authorizations/member-verification`.
+
+Legacy route support:
+
+```txt
+/ambulance/dashboard → redirects to /authorizations/dashboard
+```
+
+Ambulance sidebar:
+
+```txt
+Authorization Dashboard
+Ambulance Benefit Check
+Verification History
+```
+
+The Ambulance Benefit Check must answer:
+
+- Is the member active?
+- What plan are they on?
+- Does the plan include ambulance benefit?
+- Is the ambulance benefit active now?
+- Are there waiting periods, limits, or exclusions?
+- Can ambulance authorization proceed?
+
+Africa Assist sidebar:
+
+```txt
+Authorization Dashboard
+Hospital Benefit Check
+GOP Intake
+Verification History
+```
+
+The Hospital Benefit Check must answer:
+
+- Is the member active?
+- What plan are they on?
+- Does the plan include hospital benefit?
+- Is the hospital benefit active now?
+- Are there waiting periods, limits, or exclusions?
+- Can hospital pre-auth / GOP proceed?
+
+Africa Assist can submit or upload a GOP only after verification. Submitted GOPs must enter the Hospital Claims intake/review flow and should not directly create final claim rows.
+
+Authorization users should receive only the minimum data needed to verify cover and benefit status. Do not expose unrelated member, financial, or claims information in this portal.
+
+Role isolation:
+
+- `ambulance_operator` sees the unified verification page as Ambulance Benefit Check.
+- `africa_assist_authorization` sees the unified verification page as Hospital Benefit Check and can access GOP Intake.
+- A user typing the other partner's route directly should see an access-restricted state.
+- Neither demo role should receive broad claims, member, finance, or admin permissions.
+
+Current dashboard state:
+
+- Authorization Dashboard is live as a demo shell.
+- Unified Member Verification / Benefit Check page is live as a demo shell.
+- GOP Intake page is live as a demo shell.
+- Verification History page is live as a demo shell.
+- Secure member/policy lookup API is not connected yet.
+- GOP submission is not persisted yet; it must later connect to the Hospital Claims intake scanner/review flow.
+
+---
+
 ## Future Claims Washing Integration
 
 This dashboard becomes the primary interface for the future Claims Washer.

@@ -29,7 +29,7 @@
 - Audit logging for auth events
 
 #### ✅ Task 4: Implement RBAC (Role-Based Access Control)
-- 16 system roles defined
+- 16 original system roles defined, with new Authorization demo roles being introduced for Ambulance and Africa Assist access
 - 50+ permissions across all resources
 - Role-permission mappings
 - Permission guards and decorators
@@ -1246,6 +1246,7 @@ npm run test:watch    # Run tests in watch mode
 - Broker (7 items): Dashboard, My Clients, Quotes, Applications, Policies, Commissions, Profile
 - Member (8 items): Dashboard, My Policies, My Claims, Dependants, Payments, Documents, Consent, Profile
 - Marketing Manager (6 items): Dashboard, Leads, Campaigns, Referrals, Analytics, Profile
+- Authorization users: shared Authorizations portal with one unified verification/benefit check page. It displays as Ambulance Benefit Check for `ambulance_operator` and Hospital Benefit Check for `africa_assist_authorization`, with GOP Intake only for Africa Assist.
 
 **Backend Coverage: 100%**
 All 20 backend modules now have frontend UI:

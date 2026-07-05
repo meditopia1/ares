@@ -62,6 +62,11 @@
 - Dashboard, Leads, Campaigns
 - Referrals, Analytics, Profile
 
+**Authorization Portal (6 pages):**
+- Dashboard, unified Member Verification / Benefit Check
+- GOP Intake, Verification History
+- Roles: `ambulance_operator`, `africa_assist_authorization`
+
 ## Running Servers
 
 ### Backend:
@@ -91,6 +96,8 @@ npm run dev
 | Compliance | compliance@day1main.com | compliance123 |
 | Finance | finance@day1main.com | finance123 |
 | Marketing | marketing@day1main.com | marketing123 |
+| Ambulance Authorization | ambu@out.com | ambu123 |
+| Africa Assist Authorization | afri@out.com | afri123 |
 
 ## Database
 
@@ -130,6 +137,7 @@ npm run dev
 - ✅ Login/authentication
 - ✅ Collapsible sidebar layout
 - ✅ Role-based navigation
+- ✅ Authorization portal demo shell for Ambulance and Africa Assist roles
 - ✅ Dashboard with statistics
 - ✅ All CRUD operations UI
 - ✅ Search and filter functionality

@@ -94,7 +94,7 @@ export default function Home() {
               </Link>
               <Link href="/login">
                 <GlowingButton glowColor="#dc2626" className="w-full">
-                  Ambulance
+                  Authorizations
                 </GlowingButton>
               </Link>
               <Link href="/login">

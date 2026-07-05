@@ -85,6 +85,17 @@ These users are already available and should be used during the demo:
 - Marketing: `marketing@day1main.com / marketing123`
 - Finance: `finance@day1main.com / finance123`
 - Compliance: `compliance@day1main.com / compliance123`
+- Ambulance Authorization: `ambu@out.com / ambu123`
+- Africa Assist Authorization: `afri@out.com / afri123`
+
+Authorization demo notes:
+
+- `ambu@out.com` uses role `ambulance_operator`.
+- `afri@out.com` uses role `africa_assist_authorization`.
+- Both enter through the public **Authorizations** login tile.
+- Ambulance users see the unified verification page as Ambulance Benefit Check.
+- Africa Assist users see the unified verification page as Hospital Benefit Check plus GOP Intake.
+- These are demo shells only until secure member/policy lookup and GOP persistence are connected.
 
 ---
 

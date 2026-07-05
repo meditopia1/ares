@@ -51,9 +51,9 @@ export default function DashboardPage() {
     } else if (role === 'call_centre_agent') {
       console.log('→ Redirecting to call centre dashboard');
       window.location.href = '/call-centre/dashboard';
-    } else if (role === 'ambulance_operator') {
-      console.log('→ Redirecting to ambulance dashboard');
-      router.push('/ambulance/dashboard');
+    } else if (role === 'ambulance_operator' || role === 'africa_assist_authorization') {
+      console.log('→ Redirecting to authorizations dashboard');
+      router.push('/authorizations/dashboard');
     } else if (role === 'provider') {
       console.log('→ Redirecting to provider dashboard');
       router.push('/provider/dashboard');

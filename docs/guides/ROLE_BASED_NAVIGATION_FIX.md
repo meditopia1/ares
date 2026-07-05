@@ -84,12 +84,36 @@ Implemented role-based navigation that dynamically changes the sidebar menu base
 
 ---
 
+### 7. Authorization Users (`ambulance_operator`, `africa_assist_authorization`)
+**Public Login Tile:**
+- Authorizations
+
+**Shared Routes:**
+- Dashboard → `/authorizations/dashboard`
+- Unified verification / benefit check → `/authorizations/member-verification`
+- Verification History → `/authorizations/history`
+
+**Ambulance Operator Sidebar:**
+- Dashboard → `/authorizations/dashboard`
+- Ambulance Benefit Check → `/authorizations/member-verification`
+- Verification History → `/authorizations/history`
+
+**Africa Assist Authorization Sidebar:**
+- Dashboard → `/authorizations/dashboard`
+- Hospital Benefit Check → `/authorizations/member-verification`
+- GOP Intake → `/authorizations/gop-intake`
+- Verification History → `/authorizations/history`
+
+**Purpose:** External authorization users verify member/policy status and confirm the relevant benefit before transport, hospital pre-auth, or GOP intake proceeds. These dashboards must expose only the minimum information needed for verification.
+
+---
+
 ## How It Works
 
 The `SidebarLayout` component now includes a `getNavigationForRole()` function that:
 
 1. Checks the user's roles from `user?.roles` array
-2. Determines which role takes precedence (admin > broker > claims_assessor > finance_manager > member)
+2. Determines which role takes precedence
 3. Returns the appropriate navigation items for that role
 4. Dynamically renders the sidebar menu
 
@@ -137,6 +161,20 @@ Expected: See "Dashboard", "Payments", "Reconciliations", "Reports"
 Email: compliance@day1main.com
 Password: compliance123
 Expected: See default member navigation
+```
+
+**7. Ambulance Authorization Demo:**
+```
+Email: ambu@out.com
+Password: ambu123
+Expected: See Authorization Dashboard, Ambulance Benefit Check, Verification History
+```
+
+**8. Africa Assist Authorization Demo:**
+```
+Email: afri@out.com
+Password: afri123
+Expected: See Authorization Dashboard, Hospital Benefit Check, GOP Intake, Verification History
 ```
 
 ## Files Modified

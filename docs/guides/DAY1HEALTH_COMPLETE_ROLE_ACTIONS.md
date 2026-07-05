@@ -633,7 +633,18 @@
 
 ---
 
-## 11. AMBULANCE OPERATOR (ambulance_operator)
+## 11. AUTHORIZATION USERS
+
+The public login tile is **Authorizations**. Users are routed by database role after login.
+
+Current authorization roles:
+
+```txt
+ambulance_operator
+africa_assist_authorization
+```
+
+### 11.1 AMBULANCE OPERATOR (ambulance_operator)
 **Purpose:** Emergency transport verification before member transport
 
 ### Daily Actions:
@@ -692,6 +703,51 @@
   - Track claim status
   - View payment status
 
+### 11.2 AFRICA ASSIST AUTHORIZATION (africa_assist_authorization)
+**Purpose:** Hospital pre-auth verification and controlled GOP intake
+
+### Daily Actions:
+- **Member Verification**
+  - Search member by ID number
+  - Search member by policy number
+  - Verify member identity
+  - Confirm active policy status
+
+- **Hospital Benefit Check**
+  - Confirm plan name
+  - Confirm hospital benefit exists on the plan
+  - Check waiting periods
+  - Check exclusions and benefit limits
+  - Decide whether hospital pre-auth / GOP can proceed
+
+- **GOP Intake**
+  - Capture Africa Assist reference
+  - Capture authorization number
+  - Upload GOP document
+  - Submit GOP into Hospital Claims intake
+  - Track submitted GOP status
+
+- **Verification History**
+  - View completed checks
+  - Review audit trail
+  - Confirm what information was used for verification
+
+### Authorization Portal Routes:
+```txt
+/authorizations/dashboard
+/authorizations/member-verification
+/authorizations/gop-intake
+/authorizations/history
+```
+
+`/authorizations/member-verification` is the single active verification page. It auto-fills member, policy, plan, and benefit output from one lookup and displays as Ambulance Benefit Check or Hospital Benefit Check depending on role.
+
+### Access Boundaries:
+- `ambulance_operator` sees the unified verification page as Ambulance Benefit Check.
+- `africa_assist_authorization` sees the unified verification page as Hospital Benefit Check and can access GOP Intake.
+- Authorization users must not receive broad claims, member, finance, or admin access.
+- The portal should expose only the minimum member/policy/benefit information needed to complete verification.
+
 ---
 
 ## SYSTEM WORKFLOWS & INTEGRATIONS
@@ -707,6 +763,9 @@
 
 ### Emergency Flow:
 1. **Emergency Call** (Member) → 2. **Verification** (Ambulance) → 3. **Transport** (Ambulance) → 4. **Treatment** (Provider) → 5. **Claim** (Provider/Ambulance) → 6. **Assessment** (Claims Assessor)
+
+### Africa Assist GOP Flow:
+1. **Pre-auth Request** (Africa Assist) → 2. **Unified Member / Hospital Benefit Check** (Authorization Portal) → 3. **GOP Upload/Submit** (Africa Assist) → 4. **Hospital Claims Intake** (Claims Team) → 5. **Review and Add to Claims**
 
 ### Collections Flow:
 1. **Debit Order Run** (Operations) → 2. **Failed Payment** (System) → 3. **Retry** (Operations) → 4. **Still Failed** → 5. **Arrears Notice** (Operations) → 6. **Payment Plan** (Operations) → 7. **Suspension** (Operations) → 8. **Reinstatement** (Operations)

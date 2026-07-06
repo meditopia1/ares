@@ -13,11 +13,14 @@
 - ESLint, Prettier, TypeScript strict mode
 
 #### ✅ Task 2: Implement database schema and migrations
-- Complete Prisma schema with 80+ tables
+- Complete Prisma schema plus Supabase hospital claims workspace schema
 - All core entities: Identity, Members, Products, Policies, Providers, Claims, Payments, Finance, Marketing, Compliance, Reporting
 - PMB support for medical scheme mode
 - Seed script with RBAC data
 - Migration scripts
+- Supabase hospital claims workspace tables added: `hospital_claim_intakes`, `hospital_claims_register`, `hosp_claims`, documents, payments, audit, history, calculation rules, and monthly/annual summary views
+- 2026 Excel hospital claims register imported and matched to members where possible
+- Hospital register drawer edits persist back to `hospital_claims_register`
 
 #### ✅ Task 3: Implement authentication and session management
 - User registration and login
@@ -29,7 +32,7 @@
 - Audit logging for auth events
 
 #### ✅ Task 4: Implement RBAC (Role-Based Access Control)
-- 16 original system roles defined, with new Authorization demo roles being introduced for Ambulance and Africa Assist access
+- 18 roles documented, including Ambulance and Africa Assist authorization demo roles
 - 50+ permissions across all resources
 - Role-permission mappings
 - Permission guards and decorators
@@ -1247,6 +1250,7 @@ npm run test:watch    # Run tests in watch mode
 - Member (8 items): Dashboard, My Policies, My Claims, Dependants, Payments, Documents, Consent, Profile
 - Marketing Manager (6 items): Dashboard, Leads, Campaigns, Referrals, Analytics, Profile
 - Authorization users: shared Authorizations portal with one unified verification/benefit check page. It displays as Ambulance Benefit Check for `ambulance_operator` and Hospital Benefit Check for `africa_assist_authorization`, with GOP Intake only for Africa Assist.
+- Claims users: Hospital Claims workspace added above Claims Queue. It displays the imported DB-backed hospital claims register, monthly subtotal rows, OCR/GOP intake review, and editable drawer fields.
 
 **Backend Coverage: 100%**
 All 20 backend modules now have frontend UI:
@@ -1634,8 +1638,8 @@ pnpm dev
 
 ## Database Statistics
 
-- 80+ tables
-- 16 roles
+- 90+ tables including hospital claims workspace tables
+- 18 roles including authorization demo roles
 - 50+ permissions
 - Proper indexing for performance
 - Foreign key relationships for data integrity

@@ -1,6 +1,6 @@
 # Day1Main - Current Status Summary
 
-**Last Updated:** January 13, 2026
+**Last Updated:** July 5, 2026
 
 ## 🎉 Project Status: Phase 10 Complete - 100% Frontend Coverage Achieved!
 
@@ -20,8 +20,9 @@
 - **421 tests passing** (100% pass rate)
 - **300+ API endpoints** implemented
 - **20 backend modules** complete
-- **80+ database tables**
-- **16 roles, 50+ permissions**
+- **90+ database tables including hospital claims workspace tables**
+- **18 roles including Ambulance and Africa Assist authorization demo roles**
+- **50+ permissions**
 
 ## Frontend Status: ✅ COMPLETE (100% Coverage)
 
@@ -67,6 +68,13 @@
 - GOP Intake, Verification History
 - Roles: `ambulance_operator`, `africa_assist_authorization`
 
+**Hospital Claims Workspace:**
+- DB-backed Hospital Claims Register at `/claims/hospital`
+- Imported 2026 Excel hospital claims register into Supabase
+- Editable claim drawer with save back to `hospital_claims_register`
+- Month folders start collapsed and subtotal rows display below the correct workbook month
+- GOP/Application scan review creates draft workspace rows pending final intake persistence
+
 ## Running Servers
 
 ### Backend:
@@ -101,16 +109,16 @@ npm run dev
 
 ## Database
 
-- **Provider:** Supabase (Europe server)
+- **Provider:** Self-hosted Supabase
 - **Connection:** ✅ Connected
-- **Tables:** 80+ tables seeded with test data
-- **URL:** https://ldygmpaipxbokxzyzyti.supabase.co
+- **Tables:** 90+ tables including hospital claims workspace tables
+- **URL:** http://169.255.58.175:8000
 
 ## Key Features Implemented
 
 ### Backend:
 - ✅ Authentication & Authorization (JWT, MFA)
-- ✅ RBAC with 16 roles and 50+ permissions
+- ✅ RBAC with 18 roles and 50+ permissions
 - ✅ Audit logging (immutable trail)
 - ✅ Member registration and KYC/FICA
 - ✅ Policy management with waiting periods
@@ -137,7 +145,8 @@ npm run dev
 - ✅ Login/authentication
 - ✅ Collapsible sidebar layout
 - ✅ Role-based navigation
-- ✅ Authorization portal demo shell for Ambulance and Africa Assist roles
+- ✅ Authorization portal for Ambulance and Africa Assist roles
+- ✅ Hospital Claims Workspace with imported register, subtotal rows, editable drawer, and Supabase-backed hospital claim tables
 - ✅ Dashboard with statistics
 - ✅ All CRUD operations UI
 - ✅ Search and filter functionality
@@ -155,6 +164,7 @@ npm run dev
 - Add form validation
 - Handle loading and error states
 - Real-time updates with Supabase subscriptions
+- Persist reviewed GOP/Application intake rows into `hospital_claim_intakes` and `hospital_claims_register`
 
 ### Phase 12: Advanced Features
 - File upload for documents

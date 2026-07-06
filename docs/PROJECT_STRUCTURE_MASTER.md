@@ -4,7 +4,7 @@
 This document defines the official logical structure of the Day1Main project.
 All documentation, development, and testing must follow this structure.
 
-Last Updated: February 27, 2026
+Last Updated: July 5, 2026
 Status: OFFICIAL MASTER REFERENCE
 
 ---
@@ -187,7 +187,7 @@ Status: OFFICIAL MASTER REFERENCE
 ### SECTION 6: CLAIMS PROCESSING
 **Purpose:** Service delivery to members
 **Business Flow:** Member/Provider → Claim Submission → Assessment → Approval → Payment
-**Status:** PARTIAL (interface exists, workflow needs completion)
+**Status:** ACTIVE BUILD (hospital claims workspace implemented; wider claims workflow still being completed)
 
 **What It Does:**
 - Receive claims from members or providers
@@ -199,6 +199,10 @@ Status: OFFICIAL MASTER REFERENCE
 - Notify member
 - Track claim history
 - Detect fraud
+- Maintain the imported Hospital Claims Register
+- Review GOP/Application OCR intake before adding new hospital claim rows
+- Edit hospital claim/register fields from the claim drawer
+- Track hospital claim documents, payments, audit, and history
 
 **Key Features:**
 - Claims submission interface
@@ -208,6 +212,11 @@ Status: OFFICIAL MASTER REFERENCE
 - Provider payment processing
 - Claim tracking and history
 - Fraud detection
+- Hospital Claims Workspace at `/claims/hospital`
+- Supabase-backed hospital tables: `hospital_claim_intakes`, `hospital_claims_register`, `hosp_claims`, document/payment/audit/history tables
+- Imported 2026 Excel hospital claims register with monthly subtotal rows
+- Editable claim drawer with save back to `hospital_claims_register`
+- GOP/Application scan review and HCR claim number generation for new rows
 
 **Dependencies:**
 - Section 3 (member plan, status, benefit limits)

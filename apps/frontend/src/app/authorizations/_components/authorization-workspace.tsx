@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
 import { PageLoading } from '@/components/layout/page-loading';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/auth-context';
 import { authFetch } from '@/lib/auth-fetch';
+import { FileText } from 'lucide-react';
 
 type AuthorizationPage =
   | 'dashboard'
@@ -477,6 +478,67 @@ function hospitalBenefitChecks() {
 }
 
 function GopIntakeView() {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [submitResult, setSubmitResult] = useState<{
+    nextClaimNumber: string;
+    confidence: number;
+    documentType: string;
+    extractedFields: { label: string; value: string; confidence: number }[];
+  } | null>(null);
+
+  const fileTypeLabel = selectedFile
+    ? selectedFile.name.toLowerCase().endsWith('.pdf')
+      ? 'PDF'
+      : selectedFile.name.toLowerCase().endsWith('.docx')
+        ? 'DOCX'
+        : selectedFile.type || 'Document'
+    : '';
+
+  async function submitGopDocument() {
+    if (!selectedFile) {
+      setSubmitError('Select a GOP or application file first.');
+      return;
+    }
+
+    setSubmitting(true);
+    setSubmitError('');
+
+    try {
+      const payload = new FormData();
+      payload.append('file', selectedFile);
+      payload.append('existingClaimNumbers', JSON.stringify([]));
+
+      const response = await authFetch('/api/claims-assessor/hospital-intake', {
+        method: 'POST',
+        body: payload,
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.details || 'Failed to submit GOP document');
+      }
+
+      setSubmitResult({
+        nextClaimNumber: data.nextClaimNumber,
+        confidence: data.confidence,
+        documentType: data.document?.documentType || 'unknown',
+        extractedFields: data.extractedFields || [],
+      });
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('day1:gop-intake-updated'));
+      }
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Failed to submit GOP document');
+      setSubmitResult(null);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -486,19 +548,85 @@ function GopIntakeView() {
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <Input placeholder="Africa Assist reference" />
-          <Input placeholder="Authorization number" />
           <Input placeholder="Policy number" />
           <Input placeholder="Hospital practice number" />
         </div>
         <label className="flex cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-green-300 bg-green-50/40 px-4 py-8 text-center hover:bg-green-50">
           <span className="text-sm font-semibold text-green-800">Upload GOP Document</span>
           <span className="mt-1 text-xs text-gray-500">PDF or DOCX upload</span>
-          <input type="file" accept=".pdf,.docx" className="sr-only" />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.docx"
+            className="sr-only"
+            onChange={(event) => {
+              const file = event.target.files?.[0] || null;
+              setSelectedFile(file);
+              setSubmitResult(null);
+              setSubmitError('');
+            }}
+          />
         </label>
+        {selectedFile && (
+          <div className="flex items-center gap-3 rounded-md border border-green-200 bg-white px-4 py-3 shadow-sm">
+            <div className="flex h-11 w-11 items-center justify-center rounded-md bg-green-50 text-green-700">
+              <FileText className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-gray-900">{selectedFile.name}</p>
+              <p className="text-xs text-gray-500">
+                {fileTypeLabel} / {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSelectedFile(null);
+                setSubmitResult(null);
+                setSubmitError('');
+                if (fileInputRef.current) fileInputRef.current.value = '';
+              }}
+            >
+              Remove
+            </Button>
+          </div>
+        )}
         <div className="flex flex-wrap gap-2">
-          <Button>Submit to Hospital Claims Intake</Button>
-          <Button variant="outline">Save Draft</Button>
+          <Button onClick={submitGopDocument} disabled={!selectedFile || submitting || Boolean(submitResult)}>
+            {submitting ? 'Submitting...' : submitResult ? 'Submitted' : 'Submit to Hospital Claims Intake'}
+          </Button>
         </div>
+        {submitError && (
+          <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+            Failed to submit GOP document: {submitError}
+          </div>
+        )}
+        {submitResult && (
+          <div className="space-y-3 rounded-md border border-green-200 bg-green-50 p-4">
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              <span className="font-semibold text-green-800">GOP upload successful</span>
+              <span className="rounded-full bg-white px-2 py-1 font-medium text-gray-700">
+                Claim No: {submitResult.nextClaimNumber}
+              </span>
+              <span className="rounded-full bg-white px-2 py-1 font-medium text-gray-700">
+                OCR Confidence: {submitResult.confidence}%
+              </span>
+              <span className="rounded-full bg-white px-2 py-1 font-medium text-gray-700">
+                {submitResult.documentType.replace('_', ' ')}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
+              {submitResult.extractedFields.slice(0, 6).map((field) => (
+                <div key={`${field.label}-${field.value}`} className="rounded-md border border-green-100 bg-white px-3 py-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{field.label}</p>
+                  <p className="mt-1 text-sm font-semibold text-gray-900">{field.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <p className="text-sm text-gray-600">
           This will connect to the same Hospital Claims intake scanner and review flow used by the claims workspace.
         </p>

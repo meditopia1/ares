@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   let tempFile = '';
 
   try {
-    await requireAnyRole(request, ['claims', 'admin', 'system_admin']);
+    await requireAnyRole(request, ['claims', 'admin', 'system_admin', 'africa_assist_authorization']);
 
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
@@ -45,6 +45,35 @@ export async function POST(request: NextRequest) {
       );
     }
     const documentType = detectDocumentType(fullText, file.name);
+    const supabase = createServiceRoleSupabaseClient();
+
+    const { data: duplicateMatches, error: duplicateLookupError } = await supabase
+      .from('hospital_claim_intakes')
+      .select('id, intake_number, source_reference, created_at, status')
+      .eq('source_type', 'gop_upload')
+      .eq('file_name', file.name)
+      .eq('file_size_bytes', file.size)
+      .eq('raw_text', fullText)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (duplicateLookupError) {
+      console.error('Failed to inspect duplicate hospital intake:', duplicateLookupError);
+    }
+
+    const existingDuplicate = duplicateMatches?.[0];
+
+    if (existingDuplicate) {
+      return NextResponse.json(
+        {
+          error: 'This GOP has already been submitted',
+          details: `Existing intake ${existingDuplicate.intake_number} is already stored for claim ${existingDuplicate.source_reference || '-'}.`,
+          duplicate: existingDuplicate,
+        },
+        { status: 409 }
+      );
+    }
+
     const extractedFields = extractHospitalClaimFields(fullText, documentType);
     const nextClaimNumber = await generateNextHcrClaimNumber(existingClaimNumbers);
 
@@ -59,6 +88,36 @@ export async function POST(request: NextRequest) {
       ? Math.round(extractedFields.reduce((sum, field) => sum + field.confidence, 0) / extractedFields.length)
       : 0;
 
+    const { data: intakeRow, error: intakeError } = await supabase
+      .from('hospital_claim_intakes')
+      .insert({
+        intake_number: `HCI-${nextClaimNumber}-${randomUUID().slice(0, 8)}`,
+        source_type: 'gop_upload',
+        source_reference: nextClaimNumber,
+        document_type: documentType,
+        file_name: file.name,
+        file_mime_type: file.type || extension.replace('.', ''),
+        file_size_bytes: file.size,
+        status: 'new',
+        notification_status: 'new',
+        ocr_confidence: confidence,
+        ocr_fields: extractedFields,
+        raw_text: fullText,
+      })
+      .select('id, intake_number, status, notification_status, created_at')
+      .single();
+
+    if (intakeError) {
+      console.error('Failed to persist hospital intake:', intakeError);
+      return NextResponse.json(
+        {
+          error: 'Failed to save hospital intake',
+          details: intakeError.message,
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       ocrEngine: 'embedded_pdf_or_docx_text',
@@ -72,6 +131,7 @@ export async function POST(request: NextRequest) {
       confidence,
       extractedFields,
       fullTextPreview: fullText.slice(0, 2000),
+      intake: intakeRow,
     });
   } catch (error) {
     console.error('Hospital intake scan error:', error);
@@ -401,18 +461,45 @@ async function generateNextHcrClaimNumber(existingClaimNumbers: string[] = []) {
   const prefix = `HCR${yy}${mm}${dd}`;
 
   const supabase = createServiceRoleSupabaseClient();
-  const { data, error } = await supabase
-    .from('claims')
-    .select('claim_number')
-    .like('claim_number', `${prefix}%`)
-    .order('claim_number', { ascending: false })
-    .limit(1);
+  const [claimNumberResult, hcrResult, intakeResult] = await Promise.all([
+    supabase
+      .from('hospital_claims_register')
+      .select('claim_number')
+      .like('claim_number', `${prefix}%`)
+      .order('claim_number', { ascending: false })
+      .limit(1),
+    supabase
+      .from('hospital_claims_register')
+      .select('hcr_claim_number')
+      .like('hcr_claim_number', `${prefix}%`)
+      .order('hcr_claim_number', { ascending: false })
+      .limit(1),
+    supabase
+      .from('hospital_claim_intakes')
+      .select('source_reference')
+      .eq('source_type', 'gop_upload')
+      .like('source_reference', `${prefix}%`)
+      .order('source_reference', { ascending: false })
+      .limit(1),
+  ]);
 
-  if (error) {
-    console.error('Failed to inspect HCR claim numbers:', error);
+  if (claimNumberResult.error) {
+    console.error('Failed to inspect HCR claim numbers:', claimNumberResult.error);
   }
 
-  const databaseLast = data?.[0]?.claim_number || '';
+  if (hcrResult.error) {
+    console.error('Failed to inspect HCR claim numbers:', hcrResult.error);
+  }
+
+  if (intakeResult.error) {
+    console.error('Failed to inspect HCR intake claim numbers:', intakeResult.error);
+  }
+
+  const databaseLast =
+    claimNumberResult.data?.[0]?.claim_number ||
+    hcrResult.data?.[0]?.hcr_claim_number ||
+    intakeResult.data?.[0]?.source_reference ||
+    '';
   const visibleLast = existingClaimNumbers
     .filter((claimNumber) => claimNumber.startsWith(prefix))
     .sort()

@@ -95,7 +95,8 @@ Authorization demo notes:
 - Both enter through the public **Authorizations** login tile.
 - Ambulance users see the unified verification page as Ambulance Benefit Check.
 - Africa Assist users see the unified verification page as Hospital Benefit Check plus GOP Intake.
-- These are demo shells only until secure member/policy lookup and GOP persistence are connected.
+- The authorization benefit check uses the secure role-limited member lookup flow.
+- GOP submission is still a controlled demo action until it is wired into `hospital_claim_intakes` and the Hospital Claims scanner/review flow.
 
 ---
 

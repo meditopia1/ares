@@ -19,7 +19,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
   register: (data: {
     email: string;
@@ -217,6 +217,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       persistAuthSession(data.session);
       await loadUser();
+      const authenticatedUser = data.user;
+
+      if (authenticatedUser?.isProvider) {
+        return buildProviderUser({
+          id: authenticatedUser.providerId || authenticatedUser.id,
+          email: authenticatedUser.email || '',
+          name: authenticatedUser.providerName || '',
+          doctorSurname: authenticatedUser.doctorSurname || '',
+          practiceName: authenticatedUser.practiceName,
+          providerNumber: authenticatedUser.providerNumber,
+          authUserId: authenticatedUser.id,
+        });
+      }
+
+      return {
+        id: authenticatedUser.id,
+        email: authenticatedUser.email,
+        firstName: '',
+        lastName: '',
+        roles: authenticatedUser.roles || [],
+        permissions: authenticatedUser.permissions || [],
+      };
     } catch (error: any) {
       console.error('Login error:', error);
       throw new Error(error.message || 'Login failed');

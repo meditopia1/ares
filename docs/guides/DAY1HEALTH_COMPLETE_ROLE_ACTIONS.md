@@ -758,6 +758,15 @@ africa_assist_authorization
 ### Claims Flow:
 1. **Treatment** (Provider/Member) → 2. **Claim Submission** (Provider/Member) → 3. **Assessment** (Claims Assessor) → 4. **Approval** (Claims Assessor) → 5. **Payment** (Finance) → 6. **Remittance** (Provider/Member)
 
+### Hospital Claims Register Flow:
+1. **Hospital/GOP Source** (Hospital, Africa Assist, or internal claims staff) → 2. **Hospital Claims Intake** (`hospital_claim_intakes`) → 3. **OCR/scan review** (Claims Team) → 4. **Member/provider/policy lookup** → 5. **Add to Hospital Claims Register** (`hospital_claims_register`) → 6. **Editable drawer corrections** (Claims Team) → 7. **Audit/history/payment tracking** (`hosp_claim_audit`, `hosp_claim_history`, `hosp_claim_payments`)
+
+Current state:
+- 2026 Excel hospital claims register is imported into `hospital_claims_register`.
+- Monthly subtotal rows are stored and displayed below the correct workbook month.
+- Drawer edits save back to the register.
+- Reviewed GOP/Application persistence into `hospital_claim_intakes` is the next integration step.
+
 ### Pre-Authorization Flow:
 1. **Request** (Provider/Member) → 2. **Assessment** (Claims Assessor) → 3. **Approval/Decline** (Claims Assessor) → 4. **Notification** (Provider/Member) → 5. **Treatment** (Provider) → 6. **Claim** (Provider)
 
@@ -765,7 +774,7 @@ africa_assist_authorization
 1. **Emergency Call** (Member) → 2. **Verification** (Ambulance) → 3. **Transport** (Ambulance) → 4. **Treatment** (Provider) → 5. **Claim** (Provider/Ambulance) → 6. **Assessment** (Claims Assessor)
 
 ### Africa Assist GOP Flow:
-1. **Pre-auth Request** (Africa Assist) → 2. **Unified Member / Hospital Benefit Check** (Authorization Portal) → 3. **GOP Upload/Submit** (Africa Assist) → 4. **Hospital Claims Intake** (Claims Team) → 5. **Review and Add to Claims**
+1. **Pre-auth Request** (Africa Assist) → 2. **Unified Member / Hospital Benefit Check** (Authorization Portal) → 3. **GOP Upload/Submit** (Africa Assist) → 4. **Hospital Claims Intake** (Claims Team) → 5. **Scan/review** → 6. **Add to Hospital Claims Register**
 
 ### Collections Flow:
 1. **Debit Order Run** (Operations) → 2. **Failed Payment** (System) → 3. **Retry** (Operations) → 4. **Still Failed** → 5. **Arrears Notice** (Operations) → 6. **Payment Plan** (Operations) → 7. **Suspension** (Operations) → 8. **Reinstatement** (Operations)

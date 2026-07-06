@@ -8,7 +8,7 @@ import { SidebarLayout } from '@/components/layout/sidebar-layout';
 import { InlinePageLoading } from '@/components/layout/page-loading';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { authFetch } from '@/lib/auth-fetch';
-import { FileText, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { Bell, FileText, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 
 export default function ClaimsAssessorDashboardPage() {
   const router = useRouter();
@@ -18,7 +18,8 @@ export default function ClaimsAssessorDashboardPage() {
     preauthRequests: 0,
     fraudCases: 0,
     approvedToday: 0,
-    approvedTodayAmount: 0
+    approvedTodayAmount: 0,
+    newGopIntakes: 0,
   });
   const [recentClaims, setRecentClaims] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
@@ -38,13 +39,15 @@ export default function ClaimsAssessorDashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setLoadingData(true);
-      const [statsRes, claimsRes] = await Promise.all([
+      const [statsRes, claimsRes, gopRes] = await Promise.all([
         authFetch('/api/claims-assessor/dashboard'),
-        authFetch('/api/claims-assessor/claims?limit=5')
+        authFetch('/api/claims-assessor/claims?limit=5'),
+        authFetch('/api/gop-notifications'),
       ]);
       
       const statsData = await statsRes.json();
       const claimsData = await claimsRes.json();
+      const gopData = gopRes.ok ? await gopRes.json() : { newGopCount: 0 };
 
       if (!statsRes.ok) {
         throw new Error(statsData?.error || 'Failed to load dashboard stats');
@@ -60,6 +63,7 @@ export default function ClaimsAssessorDashboardPage() {
         fraudCases: statsData.stats?.fraud_alerts ?? 0,
         approvedToday: statsData.stats?.approved_today ?? statsData.stats?.approved_claims ?? 0,
         approvedTodayAmount: statsData.stats?.approved_today_amount ?? statsData.stats?.total_approved ?? 0,
+        newGopIntakes: gopData.newGopCount ?? 0,
       });
       setRecentClaims(claimsData.claims || []);
     } catch (error) {
@@ -107,8 +111,8 @@ export default function ClaimsAssessorDashboardPage() {
         </div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div 
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+          <div
             className="relative overflow-hidden rounded-lg border border-r-0 bg-gradient-to-t from-background to-muted transition-all duration-200 hover:shadow-lg group"
             style={{
               "--glow-color": "rgba(16, 185, 129, 1)",
@@ -132,7 +136,31 @@ export default function ClaimsAssessorDashboardPage() {
             </CardContent>
           </div>
 
-          <div 
+          <div
+            className="relative overflow-hidden rounded-lg border border-r-0 bg-gradient-to-t from-background to-muted transition-all duration-200 hover:shadow-lg group"
+            style={{
+              "--glow-color": "rgba(239, 68, 68, 1)",
+              "--glow-color-via": "rgba(239, 68, 68, 0.075)",
+              "--glow-color-to": "rgba(239, 68, 68, 0.2)",
+            } as React.CSSProperties}
+          >
+            <div className="absolute inset-0 rounded-[inherit] bg-gradient-to-r from-transparent from-40% via-[var(--glow-color-via)] to-[var(--glow-color-to)] via-70% z-10 pointer-events-none"></div>
+            <div className="absolute w-[5px] h-[60%] bg-[var(--glow-color)] right-0 top-1/2 -translate-y-1/2 rounded-l shadow-[-2px_0_10px_var(--glow-color)] group-hover:translate-x-full transition-all duration-200 z-20"></div>
+            <CardContent className="pt-6 relative z-30">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">New GOPs</p>
+                  <p className="text-3xl font-bold mt-1 text-red-600">{stats.newGopIntakes}</p>
+                  <p className="text-xs text-gray-600 mt-1">{stats.newGopIntakes === 0 ? 'No new uploads' : 'Awaiting claims review'}</p>
+                </div>
+                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                  <Bell className="w-6 h-6 text-red-600" />
+                </div>
+              </div>
+            </CardContent>
+          </div>
+
+          <div
             className="relative overflow-hidden rounded-lg border border-r-0 bg-gradient-to-t from-background to-muted transition-all duration-200 hover:shadow-lg group"
             style={{
               "--glow-color": "rgba(234, 179, 8, 1)",
@@ -156,7 +184,7 @@ export default function ClaimsAssessorDashboardPage() {
             </CardContent>
           </div>
 
-          <div 
+          <div
             className="relative overflow-hidden rounded-lg border border-r-0 bg-gradient-to-t from-background to-muted transition-all duration-200 hover:shadow-lg group"
             style={{
               "--glow-color": "rgba(239, 68, 68, 1)",
@@ -180,7 +208,7 @@ export default function ClaimsAssessorDashboardPage() {
             </CardContent>
           </div>
 
-          <div 
+          <div
             className="relative overflow-hidden rounded-lg border border-r-0 bg-gradient-to-t from-background to-muted transition-all duration-200 hover:shadow-lg group"
             style={{
               "--glow-color": "rgba(34, 197, 94, 1)",

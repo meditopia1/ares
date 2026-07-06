@@ -51,11 +51,12 @@ Implemented role-based navigation that dynamically changes the sidebar menu base
 ### 4. Claims Assessor (`claims_assessor`)
 **Sidebar Menu:**
 - Dashboard → `/claims-assessor/dashboard`
+- Hospital Claims → `/claims/hospital`
 - Claims Queue → `/claims-assessor/queue`
 - My Claims → `/claims-assessor/my-claims`
 - Profile → `/profile`
 
-**Purpose:** Review and adjudicate claims
+**Purpose:** Review, edit, and adjudicate claims. Hospital Claims opens the DB-backed Excel-style hospital register with monthly subtotal rows, GOP/Application intake review, and editable drawer fields.
 
 ---
 
@@ -105,6 +106,8 @@ Implemented role-based navigation that dynamically changes the sidebar menu base
 - Verification History → `/authorizations/history`
 
 **Purpose:** External authorization users verify member/policy status and confirm the relevant benefit before transport, hospital pre-auth, or GOP intake proceeds. These dashboards must expose only the minimum information needed for verification.
+
+Africa Assist GOP Intake must feed Hospital Claims intake/review. It must not create final claim rows directly.
 
 ---
 

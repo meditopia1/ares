@@ -9,6 +9,7 @@ import { GlowingButton } from '@/components/ui/glowing-button';
 import { FeedbackWidget } from '@/components/feedback/feedback-widget';
 import { InlinePageLoading } from '@/components/layout/page-loading';
 import { authFetch } from '@/lib/auth-fetch';
+import { Bell } from 'lucide-react';
 
 interface NavItem {
   name: string;
@@ -26,9 +27,13 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [newApplicationsCount, setNewApplicationsCount] = useState(0);
+  const [newGopCount, setNewGopCount] = useState(0);
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading, logout } = useAuth();
+  const userRoles = user?.roles || [];
+  const isAdmin = userRoles.includes('system_admin');
+  const isAuthorizationUser = userRoles.includes('ambulance_operator') || userRoles.includes('africa_assist_authorization');
 
   const handleLogout = async () => {
     try {
@@ -48,8 +53,6 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
         return;
       }
 
-      const userRoles = user?.roles || [];
-      const isAdmin = userRoles.includes('system_admin');
       const isCallCentre = userRoles.includes('call_centre_agent');
       
       if (isAdmin || isCallCentre) {
@@ -74,6 +77,47 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
     // Refresh every 30 seconds
     const interval = setInterval(fetchNewApplicationsCount, 30000);
     return () => clearInterval(interval);
+  }, [loading, user]);
+
+  useEffect(() => {
+    const fetchNewGopCount = async () => {
+      if (loading || !user) {
+        return;
+      }
+
+      const isClaimsUser = userRoles.includes('claims') || userRoles.includes('claims_assessor');
+      const isAuthorizationUserLocal = userRoles.includes('ambulance_operator') || userRoles.includes('africa_assist_authorization');
+      const isAdminUser = userRoles.includes('system_admin') || userRoles.includes('admin');
+
+      if (!isClaimsUser && !isAuthorizationUserLocal && !isAdminUser) {
+        setNewGopCount(0);
+        return;
+      }
+
+      try {
+        const response = await authFetch('/api/gop-notifications');
+        if (!response.ok) {
+          setNewGopCount(0);
+          return;
+        }
+
+        const data = await response.json();
+        setNewGopCount(data.newGopCount || 0);
+      } catch (error) {
+        console.error('Failed to fetch GOP notifications:', error);
+      }
+    };
+
+    fetchNewGopCount();
+
+    const interval = setInterval(fetchNewGopCount, 30000);
+    const refreshFromUpload = () => fetchNewGopCount();
+
+    window.addEventListener('day1:gop-intake-updated', refreshFromUpload);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('day1:gop-intake-updated', refreshFromUpload);
+    };
   }, [loading, user]);
 
   // Get navigation items based on user role
@@ -1013,6 +1057,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
             {
               name: 'GOP Intake',
               href: '/authorizations/gop-intake',
+              badge: newGopCount,
               glowColor: '#8b5cf6', // Purple
               icon: (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1218,22 +1263,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
             {navigation.map((item) => {
               const isActive = pathname === item.href;
               
-              // Helper function to convert hex to rgba
-              const hexToRgba = (hex: string, alpha: number = 1): string => {
-                let hexValue = hex.replace("#", "");
-                if (hexValue.length === 3) {
-                  hexValue = hexValue.split("").map((char) => char + char).join("");
-                }
-                const r = parseInt(hexValue.substring(0, 2), 16);
-                const g = parseInt(hexValue.substring(2, 4), 16);
-                const b = parseInt(hexValue.substring(4, 6), 16);
-                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-              };
-              
               const glowColor = (item as any).glowColor || '#22c55e'; // Default to green
-              const glowColorRgba = hexToRgba(glowColor);
-              const glowColorVia = hexToRgba(glowColor, 0.075);
-              const glowColorTo = hexToRgba(glowColor, 0.2);
               
               return (
                 <Link
@@ -1244,22 +1274,23 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
                 >
                   <div className="relative">
                     <div
-                      style={{
-                        "--glow-color": glowColorRgba,
-                        "--glow-color-via": glowColorVia,
-                        "--glow-color-to": glowColorTo,
-                      } as React.CSSProperties}
                       className={`
                         w-full h-10 px-3 text-sm rounded-md border flex items-center gap-3 relative transition-colors overflow-hidden bg-gradient-to-t border-r-0 duration-200
                         ${isActive 
                           ? 'from-green-50 to-green-100 text-green-900 border-green-200 font-semibold' 
                           : 'from-background to-muted text-foreground hover:text-muted-foreground border-border'
                         }
-                        after:inset-0 after:absolute after:rounded-[inherit] after:bg-gradient-to-r after:from-transparent after:from-40% after:via-[var(--glow-color-via)] after:to-[var(--glow-color-to)] after:via-70% after:shadow-[hsl(var(--foreground)/0.15)_0px_1px_0px_inset] z-20
-                        before:absolute before:w-[5px] before:h-[60%] before:bg-[var(--glow-color)] before:right-0 before:top-1/2 before:-translate-y-1/2 before:rounded-l before:shadow-[-2px_0_10px_var(--glow-color)] before:transition-all before:duration-200 before:z-30
                         ${sidebarCollapsed ? 'justify-center' : ''}
                       `}
                     >
+                      <span
+                        aria-hidden="true"
+                        className="absolute right-0 top-1/2 z-30 h-[60%] w-[5px] -translate-y-1/2 rounded-l"
+                        style={{
+                          backgroundColor: glowColor,
+                          boxShadow: `-2px 0 10px ${glowColor}`,
+                        }}
+                      />
                       <span className="relative z-30">{item.icon}</span>
                       {!sidebarCollapsed && <span className="flex-1 relative z-30">{item.name}</span>}
                       {!sidebarCollapsed && item.badge && item.badge > 0 && (
@@ -1335,6 +1366,20 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
 
             {/* Right side actions */}
             <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative"
+                onClick={() => router.push(isAuthorizationUser ? '/authorizations/gop-intake' : '/claims/hospital')}
+                title="New GOP submissions"
+              >
+                <Bell className="h-5 w-5" />
+                {newGopCount > 0 && (
+                  <span className="absolute -top-1 -right-1 inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white">
+                    {newGopCount}
+                  </span>
+                )}
+              </Button>
               <Button variant="ghost" size="icon">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />

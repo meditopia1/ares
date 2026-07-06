@@ -1,14 +1,14 @@
-# Day1 Claims Workspace (Excel++ Design)
+# Day1 Hospital Claims Workspace (Excel++ Design)
 
 ## Codex Build Instructions
 
 ## Project Objective
 
-Build a modern web-based **Claims Workspace** for Day1 Health.
+Build a modern web-based **Hospital Claims Workspace** for Day1 Health.
 
 **This is NOT a completely new claims system.**
 
-The objective is to reproduce the existing Excel claims register almost exactly so that existing claims staff feel immediately comfortable using it.
+The objective is to reproduce the existing hospital claims Excel register almost exactly so that existing claims staff feel immediately comfortable using it.
 
 The interface should resemble an upgraded Excel spreadsheet while being powered entirely by a PostgreSQL database.
 
@@ -22,7 +22,7 @@ Training time should be close to zero because the workflow remains familiar.
 
 ## Core Principles
 
-- Preserve the existing Day1 claims register layout.
+- Preserve the existing Day1 hospital claims register layout.
 - Keep the existing column order unless absolutely necessary.
 - Users should feel they are working inside Excel.
 - Add modern functionality without changing the workflow.
@@ -30,28 +30,79 @@ Training time should be close to zero because the workflow remains familiar.
 
 ---
 
-## Main Claims Workspace
+## Current Implemented Hospital Claims Process
+
+The Hospital Claims workspace is backed by Supabase hospital-claim tables and the imported 2026 Excel hospital claims register.
+
+Current live flow:
+
+```txt
+Existing Excel hospital claims register
+→ Import into hospital_claims_register
+→ Match rows to members where member_number or ID number exists
+→ Display rows in Hospital Claims Workspace
+→ Group rows by workbook month section
+→ Show monthly subtotal rows below the correct month
+→ Allow claims staff to edit claim/register fields from the drawer
+→ Save edits back to hospital_claims_register
+```
+
+Implemented tables:
+
+```txt
+hospital_claim_intakes
+hospital_claims_register
+hosp_claims
+hosp_claim_documents
+hosp_claim_payments
+hosp_claim_audit
+hosp_claim_history
+hosp_claim_calculation_rules
+```
+
+Implemented summary views:
+
+```txt
+hosp_claim_monthly_summary
+hosp_claim_annual_summary
+```
+
+Import and display rules:
+
+- Old imported register rows do not receive generated HCR claim numbers.
+- New GOP/application rows will receive generated HCR claim numbers.
+- Member number is sourced from the workbook member-number value and matched to `members.member_number`.
+- Province is stored in the `province` column, not the ICD10 column.
+- Date strings previously appearing under the workbook Beneficiary area are payment dates and must import into `payment_date`.
+- Monthly subtotal rows remain in the register and display under the month they summarize.
+- Workbook section month controls grouping when a row date appears in a later month but belongs to the current Excel section.
+- Notes such as `Acc Day1` are kept as notes and must not be parsed as Rand amounts.
+- Columns with any real data stay visible at full width; only completely empty columns may collapse horizontally.
+
+---
+
+## Main Hospital Claims Workspace
 
 The dashboard is essentially a powerful spreadsheet.
 
-The workspace must display existing/old claims from the claims register and database. Do not populate the workspace with dummy claims. If no real claims are available, show an empty state and import/upload prompts.
+The workspace must display existing hospital claims from `hospital_claims_register`. Do not populate the workspace with dummy claims. If no real claims are available, show an empty state and import/upload prompts.
 
 Features include:
 
 - Sticky column headers
-- Frozen first columns
+- Horizontal scrolling without forced frozen columns
 - Horizontal scrolling
 - Fast filtering
 - Multi-column sorting
 - Global search
-- Resize columns
+- Column width compression only for completely empty columns
 - Hide/show columns
 - Save personal layouts
 - Export to Excel
 - Export to PDF
 - Pagination
 - Keyboard navigation
-- Inline editing where appropriate
+- Editable drawer fields with save back to `hospital_claims_register`
 
 ---
 
@@ -69,7 +120,19 @@ Example:
 
 Users can collapse or expand each month independently.
 
-Remember expanded/collapsed state.
+Month folders should start collapsed. Users can expand/collapse each month independently.
+
+Subtotal rows must appear below the correct month. Example:
+
+```txt
+January 2026 claims
+January 2026 subtotal row
+
+February 2026 claims
+February 2026 subtotal row
+```
+
+Do not move January totals into February or February totals into March. The workbook section, not only the raw date cell, controls where imported rows belong.
 
 ---
 
@@ -121,16 +184,16 @@ Immediately:
 - OCR/text extraction begins automatically.
 - Extract every possible field.
 - No manual typing.
-- Show the scanned field information in a review panel before anything is written to the main claims register.
-- The user must click **Add to claims** to append the scanned information to the main claims workspace.
+- Show the scanned field information in a review panel before anything is written to the hospital claims register.
+- The user must click **Add to claims** to append the scanned information to the hospital claims workspace.
 
-Current intake uses embedded PDF/DOCX text extraction first. Google Vision OCR should be wired as a fallback for image-only scanned documents once the service account key is present.
+Current intake uses embedded PDF/DOCX text extraction first. Google Vision OCR should be wired as a fallback for image-only scanned documents where embedded text is not available.
 
 ---
 
 ## GOP/Application Intake Flow
 
-The claims workspace remains the primary register for old/current claims.
+The hospital claims workspace remains the primary register for imported and current hospital claims.
 
 New claims enter through an explicit intake action:
 
@@ -141,7 +204,7 @@ New GOP/Application
 → Show extracted fields for review
 → Auto lookup member/provider/policy data
 → User confirms by clicking Add to claims
-→ Append to the next available line in the main claims register
+→ Append to the next available line in the hospital claims register
 → Generate the next available HCR claim number
 → Create audit/timeline entries
 ```
@@ -195,6 +258,10 @@ Extract:
 - Any claim/application fields present on the submitted form
 
 Store the original PDF permanently.
+
+For manual validation, see:
+
+- [Hospital Claims Test Scenarios](./HOSPITAL_CLAIMS_TEST_SCENARIOS.md)
 
 The scan review should keep only the strongest/best value for duplicated labels and should not treat provider name fragments as member numbers.
 
@@ -251,7 +318,7 @@ After OCR and lookup, the user reviews the scanned information and clicks **Add 
 
 The system then:
 
-- Appends the claim to the next available line in the main claims register.
+- Appends the claim to the next available line in the hospital claims register.
 - Generates the next available HCR Claim Number.
 - Auto-fills every possible register field using scanned data and database lookups.
 - Assigns an initial status such as Awaiting Documentation, Awaiting GOP, Currently Admitted, or Under Review.
@@ -267,7 +334,7 @@ Link:
 
 Create complete audit record.
 
-Current build appends a draft row in the browser workspace first. Database persistence is a later step after the lookup and claims table mapping are finalized.
+Current build appends OCR intake as a draft row in the browser workspace first. The imported hospital register itself is persisted in Supabase and drawer edits save back to `hospital_claims_register`. The next persistence step is saving reviewed GOP/application intake rows into `hospital_claim_intakes` and then into `hospital_claims_register`.
 
 ---
 
@@ -307,7 +374,30 @@ Allow manual correction before saving.
 
 Selecting a row opens a side panel.
 
-Contains:
+The drawer is editable at all times for register fields that claims staff need to correct.
+
+Current editable drawer sections:
+
+- Register Details
+- Financials
+- Member and Patient
+
+Important editable financial fields:
+
+- Total Claims Incurred
+- Finalised Paid To Date
+- Claims Outstanding
+- Actual Costs
+- Member Costs
+- Accident
+- Illness
+- Casualty
+- Ex-Gratia
+- Repudiation
+
+Edits save through the hospital register API and update `hospital_claims_register`.
+
+Future drawer content:
 
 - Full Member Details
 - Full Claim Details
@@ -391,9 +481,9 @@ Show warnings when:
 
 ## Proposed Africa Assist Direct GOP Intake
 
-This is a proposed alternative to long email inbox extraction if Africa Assist agrees to add an **Add GOP** button to their desktop/application.
+This remains a proposed direct intake option if Africa Assist agrees to add an **Add GOP** button to their desktop/application.
 
-The goal is to let Africa Assist send GOP documents directly into the Day1 Hospital Claims intake queue instead of relying on emailed attachments.
+The goal is to let Africa Assist send GOP documents directly into the Day1 Hospital Claims intake queue instead of relying on manual attachment handling.
 
 Recommended flow:
 
@@ -442,7 +532,7 @@ Workspace behavior:
 - Show a notification count in the Hospital Claims workspace.
 - Run the same GOP scanning, validation, database lookup, and Add to claims review flow.
 
-If Africa Assist does not agree to this integration, remove this section and continue with the email inbox extraction approach.
+If Africa Assist does not agree to this integration, remove this section and continue with a controlled manual upload/import approach for GOP documents received outside the portal.
 
 ---
 
@@ -538,20 +628,21 @@ Role isolation:
 - A user typing the other partner's route directly should see an access-restricted state.
 - Neither demo role should receive broad claims, member, finance, or admin permissions.
 
-Current dashboard state:
+Current authorization dashboard state:
 
-- Authorization Dashboard is live as a demo shell.
-- Unified Member Verification / Benefit Check page is live as a demo shell.
-- GOP Intake page is live as a demo shell.
-- Verification History page is live as a demo shell.
-- Secure member/policy lookup API is not connected yet.
-- GOP submission is not persisted yet; it must later connect to the Hospital Claims intake scanner/review flow.
+- Authorization Dashboard is live for demo authorization roles.
+- Unified Member Verification / Benefit Check page is live and uses the secure member lookup endpoint for role-limited checks.
+- GOP Intake page is live as a controlled demo screen for Africa Assist.
+- Verification History page is live as a controlled demo screen.
+- GOP submission is not persisted yet; it must later connect to `hospital_claim_intakes`, the Hospital Claims scanner/review flow, and then the editable register.
 
 ---
 
 ## Future Claims Washing Integration
 
-This dashboard becomes the primary interface for the future Claims Washer.
+The Hospital Claims workspace stays separate from primary-plan claims washing. Hospital claims, GOPs, and hospital claim forms remain in the hospital register and hospital claim tables. Primary-plan claims washing must use its own workflow/table structure and may later reference hospital claims where needed.
+
+This dashboard should expose hospital claim data in a way that future validation and washing modules can plug in without redesigning the hospital claims interface.
 
 Future features include:
 

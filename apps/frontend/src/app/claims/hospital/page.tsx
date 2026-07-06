@@ -159,6 +159,22 @@ interface IntakeScanResult {
   fullTextPreview: string;
 }
 
+interface HospitalClaimIntake {
+  id: string;
+  intake_number: string;
+  source_type: string;
+  source_reference: string | null;
+  document_type: 'gop' | 'claim_form' | 'unknown';
+  file_name: string;
+  file_size_bytes: number | null;
+  status: string;
+  notification_status: string | null;
+  ocr_confidence: number | null;
+  ocr_fields: ScannedField[] | null;
+  raw_text: string | null;
+  created_at: string;
+}
+
 interface RegisterColumn {
   key: ColumnKey;
   label: string;
@@ -199,10 +215,10 @@ const registerColumns: RegisterColumn[] = [
   { key: 'cause', label: 'Cause', width: 240 },
   { key: 'hospital', label: 'HOSPITAL', width: 210 },
   { key: 'lengthOfStay', label: 'Length of Stay', width: 130 },
+  { key: 'paymentDate', label: 'Payment Date', width: 150 },
   { key: 'beneficiary', label: 'Beneficiary', width: 140 },
   { key: 'beneficiaryId', label: 'Beneficiary Death Payment ID', width: 210 },
   { key: 'beneficiaryName', label: 'Beneficiary Death Surname & Initials', width: 230 },
-  { key: 'paymentDate', label: 'Payment Date', width: 150 },
   { key: 'plan', label: 'PLAN', width: 180 },
   { key: 'inceptionDate', label: 'INCEPTION DATE', width: 140, format: 'date' },
   { key: 'icd10', label: 'ICD10 CODE', width: 150 },
@@ -284,6 +300,10 @@ const monthNames = [
   'December',
 ];
 
+function monthKeyFromDate(date: Date) {
+  return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+}
+
 const currencyFormatter = new Intl.NumberFormat('en-ZA', {
   style: 'currency',
   currency: 'ZAR',
@@ -338,7 +358,7 @@ function normaliseDate(value: string | null | undefined) {
 function normaliseStatus(status: string) {
   const lower = (status || '').toLowerCase();
   if (lower === 'pended') return 'Pending Documentation';
-  if (lower === 'pending') return 'Awaiting GOP';
+  if (lower === 'pending') return 'Open';
   if (lower === 'approved') return 'Ready for Payment';
   if (lower === 'paid') return 'Paid';
   if (lower === 'rejected') return 'Repudiated';
@@ -637,13 +657,17 @@ export default function HospitalClaimsPage() {
   const [showColumns, setShowColumns] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(defaultVisibleColumns);
   const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
-  const [monthCollapseInitialized, setMonthCollapseInitialized] = useState(false);
+  const [currentMonthKey, setCurrentMonthKey] = useState(() => monthKeyFromDate(new Date()));
   const [selectedRow, setSelectedRow] = useState<RegisterRow | null>(null);
   const [intakeFile, setIntakeFile] = useState<File | null>(null);
   const [intakeScan, setIntakeScan] = useState<IntakeScanResult | null>(null);
   const [scanningIntake, setScanningIntake] = useState(false);
   const [intakeError, setIntakeError] = useState('');
   const [draftRows, setDraftRows] = useState<RegisterRow[]>([]);
+  const [newIntakes, setNewIntakes] = useState<HospitalClaimIntake[]>([]);
+  const [selectedIntakeReview, setSelectedIntakeReview] = useState<HospitalClaimIntake | null>(null);
+  const [acceptingIntakeReview, setAcceptingIntakeReview] = useState(false);
+  const [intakeReviewError, setIntakeReviewError] = useState('');
   const [summaryCollapsed, setSummaryCollapsed] = useState(false);
   const [drawerDirty, setDrawerDirty] = useState(false);
   const [savingDrawer, setSavingDrawer] = useState(false);
@@ -662,6 +686,15 @@ export default function HospitalClaimsPage() {
     }
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    const refreshWorkspace = () => {
+      void fetchClaims();
+    };
+
+    window.addEventListener('day1:gop-intake-updated', refreshWorkspace);
+    return () => window.removeEventListener('day1:gop-intake-updated', refreshWorkspace);
+  }, []);
+
   const fetchClaims = async () => {
     try {
       setLoadingClaims(true);
@@ -671,6 +704,7 @@ export default function HospitalClaimsPage() {
       }
       const data = await response.json();
       setClaims((data.rows || []).map(fromHospitalRegisterRecord));
+      setNewIntakes(data.newIntakes || []);
     } catch (error) {
       console.error('Error fetching hospital claims:', error);
     } finally {
@@ -717,14 +751,34 @@ export default function HospitalClaimsPage() {
   }, [filteredRows]);
 
   const groupedEntries = useMemo(() => {
-    return Object.entries(groupedRows).sort(([monthA], [monthB]) => monthSortKey(monthA) - monthSortKey(monthB));
-  }, [groupedRows]);
+    const entries = new Map(Object.entries(groupedRows));
+    if (!entries.has(currentMonthKey)) {
+      entries.set(currentMonthKey, []);
+    }
+    return Array.from(entries.entries()).sort(([monthA], [monthB]) => monthSortKey(monthB) - monthSortKey(monthA));
+  }, [groupedRows, currentMonthKey]);
 
   useEffect(() => {
-    if (monthCollapseInitialized || groupedEntries.length === 0) return;
-    setCollapsedMonths(new Set(groupedEntries.map(([month]) => month)));
-    setMonthCollapseInitialized(true);
-  }, [groupedEntries, monthCollapseInitialized]);
+    setCollapsedMonths((current) => {
+      const next = new Set(current);
+      groupedEntries.forEach(([month]) => {
+        if (!next.has(month)) {
+          next.add(month);
+        }
+      });
+      return next;
+    });
+  }, [groupedEntries]);
+
+  useEffect(() => {
+    const now = new Date();
+    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 1);
+    const timeout = window.setTimeout(() => {
+      setCurrentMonthKey(monthKeyFromDate(new Date()));
+    }, Math.max(nextMonthStart.getTime() - now.getTime(), 60_000));
+
+    return () => window.clearTimeout(timeout);
+  }, [currentMonthKey]);
 
   const stats = useMemo(() => {
     const claimRows = registerRows.filter((row) => row.rowType !== 'subtotal');
@@ -741,8 +795,9 @@ export default function HospitalClaimsPage() {
       paidToday: claimRows.filter((row) => row.status === 'Paid').length,
       hospitalClaims: claimRows.length,
       totalIncurred,
+      newGops: newIntakes.length,
     };
-  }, [registerRows]);
+  }, [registerRows, newIntakes]);
 
   const toggleMonth = (month: string) => {
     setCollapsedMonths((current) => {
@@ -843,6 +898,64 @@ export default function HospitalClaimsPage() {
     setScanningIntake(false);
   };
 
+  const openIntakeReview = (intake: HospitalClaimIntake) => {
+    setIntakeReviewError('');
+    setSelectedIntakeReview(intake);
+  };
+
+  const closeIntakeReview = () => {
+    setAcceptingIntakeReview(false);
+    setIntakeReviewError('');
+    setSelectedIntakeReview(null);
+  };
+
+  const acceptIntakeIntoWorkspace = async () => {
+    if (!selectedIntakeReview || acceptingIntakeReview) return;
+
+    try {
+      setAcceptingIntakeReview(true);
+      setIntakeReviewError('');
+
+      const response = await authFetch('/api/claims/hospital/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intakeId: selectedIntakeReview.id }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 409 && data.row) {
+          const existingRow = fromHospitalRegisterRecord(data.row);
+          setClaims((current) => {
+            if (current.some((row) => row.id === existingRow.id)) return current;
+            return [existingRow, ...current];
+          });
+          setSelectedRow(existingRow);
+          setNewIntakes((current) => current.filter((intake) => intake.id !== selectedIntakeReview.id));
+          closeIntakeReview();
+          window.dispatchEvent(new CustomEvent('day1:gop-intake-updated'));
+          return;
+        }
+        throw new Error(data.error || data.details || 'Failed to insert intake into workspace');
+      }
+
+      if (data.row) {
+        const insertedRow = fromHospitalRegisterRecord(data.row);
+        setClaims((current) => [insertedRow, ...current]);
+        setSelectedRow(insertedRow);
+      }
+
+      setNewIntakes((current) => current.filter((intake) => intake.id !== selectedIntakeReview.id));
+      closeIntakeReview();
+      window.dispatchEvent(new CustomEvent('day1:gop-intake-updated'));
+    } catch (error) {
+      setIntakeReviewError(error instanceof Error ? error.message : 'Failed to insert intake into workspace');
+    } finally {
+      setAcceptingIntakeReview(false);
+    }
+  };
+
   const scanIntakeFile = async (file: File) => {
     try {
       setScanningIntake(true);
@@ -889,7 +1002,7 @@ export default function HospitalClaimsPage() {
       member: {
         first_name: firstName,
         last_name: surname,
-        member_number: field('Detected Member Number') || field('Membership Number') || field('Policy Number') || '-',
+        member_number: field('Policy Number') || field('Membership Number') || field('Detected Member Number') || '-',
       },
       provider: {
         name: field('Hospital Name') || '-',
@@ -1038,6 +1151,49 @@ export default function HospitalClaimsPage() {
               </CardContent>
             </Card>
 
+            {newIntakes.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle>New GOP Intakes</CardTitle>
+                  <CardDescription>
+                    {`${newIntakes.length} GOP upload${newIntakes.length === 1 ? '' : 's'} waiting for claims processing`}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {newIntakes.map((intake) => (
+                      <div key={intake.id} className="rounded-md border border-red-200 bg-red-50/40 px-4 py-3">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                          <div className="space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-sm font-semibold text-gray-900">{intake.source_reference || intake.intake_number}</span>
+                              <span className="inline-flex items-center rounded-full border border-red-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-red-700">
+                                New GOP
+                              </span>
+                              {intake.ocr_confidence !== null && intake.ocr_confidence !== undefined && (
+                                <span className="text-xs text-gray-500">OCR {intake.ocr_confidence}%</span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-700">{intake.file_name}</p>
+                            <p className="text-xs text-gray-500">
+                              {formatDate(intake.created_at)} / {intake.document_type.replace('_', ' ')} / {normaliseStatus(intake.status)}
+                            </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openIntakeReview(intake)}
+                          >
+                            Review source
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle>Hospital Claims Register</CardTitle>
@@ -1110,6 +1266,13 @@ export default function HospitalClaimsPage() {
                                   </button>
                                 </td>
                               </tr>
+                              {!isCollapsed && rows.length === 0 && (
+                                <tr className="bg-white">
+                                  <td colSpan={activeColumns.length} className="border-b border-gray-200 px-3 py-4 text-sm text-gray-500">
+                                    No claims yet for {month}. Upload a new GOP/Application to start this month.
+                                  </td>
+                                </tr>
+                              )}
                               {!isCollapsed &&
                                 rows.map((row) => (
                                   <tr
@@ -1190,6 +1353,7 @@ export default function HospitalClaimsPage() {
                   <SummaryRow label="Today's Claims" value={stats.todaysClaims} />
                   <SummaryRow label="Outstanding Value" value={formatCurrency(stats.outstandingValue)} tone="text-red-700" />
                   <SummaryRow label="Awaiting Documentation" value={stats.awaitingDocumentation} tone="text-yellow-700" />
+                  <SummaryRow label="New GOP Intakes" value={stats.newGops} tone="text-red-700" />
                   <SummaryRow label="Ready for Payment" value={stats.readyForPayment} tone="text-blue-700" />
                   <SummaryRow label="Claims Paid Today" value={stats.paidToday} tone="text-green-700" />
                   <SummaryRow label="Hospital Claims" value={stats.hospitalClaims} />
@@ -1285,6 +1449,107 @@ export default function HospitalClaimsPage() {
                     title={!intakeScan ? 'Scan must complete before adding to claims' : undefined}
                   >
                     Add to claims
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {selectedIntakeReview && (
+          <div className="fixed inset-0 z-50 flex justify-end bg-black/30">
+            <div className="h-full w-full max-w-xl overflow-y-auto bg-white shadow-2xl">
+              <div className="sticky top-0 z-10 border-b bg-white px-6 py-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-red-700">New GOP Intake</p>
+                    <h2 className="mt-1 text-xl font-bold text-gray-900">
+                      {selectedIntakeReview.source_reference || selectedIntakeReview.intake_number}
+                    </h2>
+                    <p className="text-sm text-gray-500">{selectedIntakeReview.file_name}</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={closeIntakeReview}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-5 p-6">
+                <DrawerSection title="Intake Details">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <StaticDetail label="Intake Number" value={selectedIntakeReview.intake_number} />
+                    <StaticDetail label="Claim Number" value={selectedIntakeReview.source_reference || '-'} />
+                    <StaticDetail label="Document Type" value={selectedIntakeReview.document_type.replace('_', ' ')} />
+                    <StaticDetail label="Status" value={normaliseStatus(selectedIntakeReview.status)} />
+                    <StaticDetail label="Uploaded" value={formatDate(selectedIntakeReview.created_at)} />
+                    <StaticDetail
+                      label="OCR Confidence"
+                      value={
+                        selectedIntakeReview.ocr_confidence !== null && selectedIntakeReview.ocr_confidence !== undefined
+                          ? `${selectedIntakeReview.ocr_confidence}%`
+                          : '-'
+                      }
+                    />
+                  </div>
+                </DrawerSection>
+
+                <DrawerSection title="Scanned Field Information">
+                  {!selectedIntakeReview.ocr_fields || selectedIntakeReview.ocr_fields.length === 0 ? (
+                    <div className="rounded-md border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">
+                      No OCR field data was stored for this intake.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {selectedIntakeReview.ocr_fields
+                        .filter(
+                          (field) =>
+                            ![
+                              'Medical Aid Status',
+                              'Consent Status',
+                              'Detected Member Number',
+                              'Total Guaranteed Amount',
+                            ].includes(field.label)
+                        )
+                        .map((field) => (
+                        <div
+                          key={`${selectedIntakeReview.id}-${field.label}-${field.value}`}
+                          className={`rounded-md border px-3 py-2 ${
+                            field.confidence < 70 ? 'border-orange-200 bg-orange-50' : 'border-gray-200 bg-white'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-xs text-gray-500">{field.label}</p>
+                            <span className="text-[10px] font-medium text-gray-400">{field.confidence}%</span>
+                          </div>
+                          <p className="mt-1 text-sm font-medium text-gray-900">{field.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </DrawerSection>
+
+                <DrawerSection title="Workspace Action">
+                  <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-3 text-sm text-blue-900">
+                    Review the scanned fields, then accept this GOP to insert the next claim line into the Hospital Claims Workspace for the current month.
+                  </div>
+                </DrawerSection>
+
+                <div className="sticky bottom-0 flex justify-end gap-2 border-t bg-white pt-4">
+                  <div className="mr-auto flex items-center">
+                    {intakeReviewError && <span className="text-sm font-medium text-red-700">{intakeReviewError}</span>}
+                  </div>
+                  <Button variant="outline" onClick={closeIntakeReview}>
+                    Close
+                  </Button>
+                  <Button
+                    onClick={acceptIntakeIntoWorkspace}
+                    disabled={acceptingIntakeReview || selectedIntakeReview.status === 'inserted'}
+                  >
+                    {selectedIntakeReview.status === 'inserted'
+                      ? 'Already inserted'
+                      : acceptingIntakeReview
+                        ? 'Inserting...'
+                        : 'Accept and insert into workspace'}
                   </Button>
                 </div>
               </div>
@@ -1392,6 +1657,15 @@ function DrawerSection({ title, children }: { title: string; children: ReactNode
       </div>
       {children}
     </section>
+  );
+}
+
+function StaticDetail({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+      <p className="text-xs text-gray-500">{label}</p>
+      <p className="mt-1 text-sm font-medium text-gray-900">{value || '-'}</p>
+    </div>
   );
 }
 

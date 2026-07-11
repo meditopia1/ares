@@ -6,7 +6,6 @@ import { useAuth } from '@/contexts/auth-context';
 import { SidebarLayout } from '@/components/layout/sidebar-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FeedbackWidget } from '@/components/feedback/feedback-widget';
 import { DashboardMetricCard } from '@/components/dashboard/dashboard-metric-card';
 import { authFetch } from '@/lib/auth-fetch';
 import { Users, ShieldCheck, FileText, Clock3, Building2, CreditCard, DollarSign } from 'lucide-react';
@@ -742,12 +741,8 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Feedback Widget */}
-      <FeedbackWidget pageName="Admin Dashboard" userRole="admin" />
     </SidebarLayout>
   );
 }
-
 
 

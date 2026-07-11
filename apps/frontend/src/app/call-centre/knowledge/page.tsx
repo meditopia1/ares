@@ -32,7 +32,7 @@ const knowledgeSections = [
       'Send to Operations if member records or payment grouping need correction.',
       'Send to Claims if the issue is claim status, pended reasons, or fraud review.',
       'Send to Admin if an application needs approval or a system-level override.',
-      'Use Feedback for broken screens, missing data, or workflow bugs.',
+      'Log broken screens, missing data, or workflow bugs through the support escalation process.',
     ],
   },
   {
@@ -107,7 +107,6 @@ export default function CallCentreKnowledgePage() {
             <Button onClick={() => router.push('/call-centre/support')}>Open Member Support</Button>
             <Button variant="outline" onClick={() => router.push('/call-centre/members')}>Open Member Lookup</Button>
             <Button variant="outline" onClick={() => router.push('/provider/eligibility')}>Provider Eligibility</Button>
-            <Button variant="outline" onClick={() => router.push('/admin/feedback')}>Open Feedback Queue</Button>
           </CardContent>
         </Card>
       </div>

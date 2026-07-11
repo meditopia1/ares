@@ -130,7 +130,7 @@ async function previewBatch(filePath, startRow, batchSize = 20) {
   console.log('If you need corrections, tell me which rows and what broker code to use.');
 }
 
-const filePath = process.argv[2] || '../../docs/all members list.xlsx';
+const filePath = process.argv[2] || '../../apps/frontend/docs/data/all members list.xlsx';
 const startRow = parseInt(process.argv[3]) || 2;
 const batchSize = parseInt(process.argv[4]) || 20;
 

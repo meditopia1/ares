@@ -157,6 +157,19 @@ interface IntakeScanResult {
   confidence: number;
   extractedFields: ScannedField[];
   fullTextPreview: string;
+  comparison?: ClaimFormComparison | null;
+}
+
+interface ClaimFormComparison {
+  matchedRegisterId: string | null;
+  matchedClaimNumber: string | null;
+  requiresManualReview: boolean;
+  majorDifferences: Array<{
+    label: string;
+    existingValue: string;
+    formValue: string;
+  }>;
+  adminPrompt: string;
 }
 
 interface HospitalClaimIntake {
@@ -172,6 +185,9 @@ interface HospitalClaimIntake {
   ocr_confidence: number | null;
   ocr_fields: ScannedField[] | null;
   raw_text: string | null;
+  matched_register_id?: string | null;
+  review_notes?: string | null;
+  comparison?: ClaimFormComparison | null;
   created_at: string;
 }
 
@@ -668,6 +684,7 @@ export default function HospitalClaimsPage() {
   const [selectedIntakeReview, setSelectedIntakeReview] = useState<HospitalClaimIntake | null>(null);
   const [acceptingIntakeReview, setAcceptingIntakeReview] = useState(false);
   const [intakeReviewError, setIntakeReviewError] = useState('');
+  const [drawerNotice, setDrawerNotice] = useState('');
   const [summaryCollapsed, setSummaryCollapsed] = useState(false);
   const [drawerDirty, setDrawerDirty] = useState(false);
   const [savingDrawer, setSavingDrawer] = useState(false);
@@ -819,6 +836,7 @@ export default function HospitalClaimsPage() {
 
   const openClaimDrawer = (row: RegisterRow) => {
     setSelectedRow(row);
+    setDrawerNotice('');
     setDrawerDirty(false);
     setDrawerError('');
     setDrawerSaved(false);
@@ -826,6 +844,7 @@ export default function HospitalClaimsPage() {
 
   const closeClaimDrawer = () => {
     setSelectedRow(null);
+    setDrawerNotice('');
     setDrawerDirty(false);
     setDrawerError('');
     setDrawerSaved(false);
@@ -942,8 +961,14 @@ export default function HospitalClaimsPage() {
 
       if (data.row) {
         const insertedRow = fromHospitalRegisterRecord(data.row);
-        setClaims((current) => [insertedRow, ...current]);
+        setClaims((current) => {
+          if (current.some((row) => row.id === insertedRow.id)) {
+            return current.map((row) => (row.id === insertedRow.id ? insertedRow : row));
+          }
+          return [insertedRow, ...current];
+        });
         setSelectedRow(insertedRow);
+        setDrawerNotice(data.comparison?.adminPrompt || '');
       }
 
       setNewIntakes((current) => current.filter((intake) => intake.id !== selectedIntakeReview.id));
@@ -986,6 +1011,14 @@ export default function HospitalClaimsPage() {
 
   const addScannedIntakeToClaims = () => {
     if (!intakeScan) return;
+
+    if (intakeScan.document.documentType === 'claim_form') {
+      setIntakeError(
+        intakeScan.comparison?.adminPrompt ||
+          'Claim form captured. Please open the claim form and review it personally against the existing claim before making changes.'
+      );
+      return;
+    }
 
     const field = (label: string) => intakeScan.extractedFields.find((item) => item.label === label)?.value || '';
     const patientName = field('Name Of Patient') || field('Full name of Patient') || field('Member Name and Surname') || '-';
@@ -1154,9 +1187,9 @@ export default function HospitalClaimsPage() {
             {newIntakes.length > 0 && (
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle>New GOP Intakes</CardTitle>
+                  <CardTitle>New Intake Queue</CardTitle>
                   <CardDescription>
-                    {`${newIntakes.length} GOP upload${newIntakes.length === 1 ? '' : 's'} waiting for claims processing`}
+                    {`${newIntakes.length} hospital intake${newIntakes.length === 1 ? '' : 's'} waiting for claims processing`}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -1168,7 +1201,7 @@ export default function HospitalClaimsPage() {
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="text-sm font-semibold text-gray-900">{intake.source_reference || intake.intake_number}</span>
                               <span className="inline-flex items-center rounded-full border border-red-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-red-700">
-                                New GOP
+                                {intake.document_type === 'claim_form' ? 'Claim Form' : 'New GOP'}
                               </span>
                               {intake.ocr_confidence !== null && intake.ocr_confidence !== undefined && (
                                 <span className="text-xs text-gray-500">OCR {intake.ocr_confidence}%</span>
@@ -1269,7 +1302,7 @@ export default function HospitalClaimsPage() {
                               {!isCollapsed && rows.length === 0 && (
                                 <tr className="bg-white">
                                   <td colSpan={activeColumns.length} className="border-b border-gray-200 px-3 py-4 text-sm text-gray-500">
-                                    No claims yet for {month}. Upload a new GOP/Application to start this month.
+                                    No claims yet for {month}. Upload a new GOP/Application or claim form to start this month.
                                   </td>
                                 </tr>
                               )}
@@ -1353,7 +1386,7 @@ export default function HospitalClaimsPage() {
                   <SummaryRow label="Today's Claims" value={stats.todaysClaims} />
                   <SummaryRow label="Outstanding Value" value={formatCurrency(stats.outstandingValue)} tone="text-red-700" />
                   <SummaryRow label="Awaiting Documentation" value={stats.awaitingDocumentation} tone="text-yellow-700" />
-                  <SummaryRow label="New GOP Intakes" value={stats.newGops} tone="text-red-700" />
+                  <SummaryRow label="New Intakes" value={stats.newGops} tone="text-red-700" />
                   <SummaryRow label="Ready for Payment" value={stats.readyForPayment} tone="text-blue-700" />
                   <SummaryRow label="Claims Paid Today" value={stats.paidToday} tone="text-green-700" />
                   <SummaryRow label="Hospital Claims" value={stats.hospitalClaims} />
@@ -1462,7 +1495,9 @@ export default function HospitalClaimsPage() {
               <div className="sticky top-0 z-10 border-b bg-white px-6 py-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-red-700">New GOP Intake</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-red-700">
+                      {selectedIntakeReview.document_type === 'claim_form' ? 'New Claim Form Intake' : 'New GOP Intake'}
+                    </p>
                     <h2 className="mt-1 text-xl font-bold text-gray-900">
                       {selectedIntakeReview.source_reference || selectedIntakeReview.intake_number}
                     </h2>
@@ -1528,9 +1563,40 @@ export default function HospitalClaimsPage() {
                   )}
                 </DrawerSection>
 
+                {selectedIntakeReview.document_type === 'claim_form' && selectedIntakeReview.comparison && (
+                  <DrawerSection title="Major Differences Review">
+                    <div className="space-y-3">
+                      <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900">
+                        {selectedIntakeReview.comparison.adminPrompt}
+                      </div>
+                      {selectedIntakeReview.comparison.majorDifferences.length === 0 ? (
+                        <div className="rounded-md border border-green-200 bg-green-50 px-3 py-3 text-sm text-green-800">
+                          No major differences were detected against the matched HCR claim. The admin should still open the claim form and review it personally.
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {selectedIntakeReview.comparison.majorDifferences.map((difference) => (
+                            <div key={`${difference.label}-${difference.formValue}`} className="rounded-md border border-amber-200 bg-white px-3 py-3">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">{difference.label}</p>
+                              <p className="mt-1 text-sm text-gray-700">
+                                <span className="font-medium text-gray-900">Current claim:</span> {difference.existingValue}
+                              </p>
+                              <p className="mt-1 text-sm text-gray-700">
+                                <span className="font-medium text-gray-900">Claim form:</span> {difference.formValue}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </DrawerSection>
+                )}
+
                 <DrawerSection title="Workspace Action">
                   <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-3 text-sm text-blue-900">
-                    Review the scanned fields, then accept this GOP to insert the next claim line into the Hospital Claims Workspace for the current month.
+                    {selectedIntakeReview.document_type === 'claim_form'
+                      ? 'Only major differences are shown here. Please open the claim form and review it personally before accepting any claim updates.'
+                      : 'Review the scanned fields, then accept this GOP to insert the next claim line into the Hospital Claims Workspace for the current month.'}
                   </div>
                 </DrawerSection>
 
@@ -1543,13 +1609,21 @@ export default function HospitalClaimsPage() {
                   </Button>
                   <Button
                     onClick={acceptIntakeIntoWorkspace}
-                    disabled={acceptingIntakeReview || selectedIntakeReview.status === 'inserted'}
+                    disabled={
+                      acceptingIntakeReview ||
+                      selectedIntakeReview.status === 'inserted' ||
+                      (selectedIntakeReview.document_type === 'claim_form' && !selectedIntakeReview.matched_register_id)
+                    }
                   >
-                    {selectedIntakeReview.status === 'inserted'
+                    {selectedIntakeReview.document_type === 'claim_form' && !selectedIntakeReview.matched_register_id
+                      ? 'No matched claim found'
+                      : selectedIntakeReview.status === 'inserted'
                       ? 'Already inserted'
                       : acceptingIntakeReview
                         ? 'Inserting...'
-                        : 'Accept and insert into workspace'}
+                        : selectedIntakeReview.document_type === 'claim_form'
+                          ? 'Open matched claim for review'
+                          : 'Accept and insert into workspace'}
                   </Button>
                 </div>
               </div>
@@ -1576,10 +1650,11 @@ export default function HospitalClaimsPage() {
               <div className="space-y-5 p-6">
                 <div className="sticky top-[89px] z-10 flex items-center justify-between gap-3 rounded-md border border-gray-200 bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
                   <div className="text-xs">
+                    {!drawerError && drawerNotice && <span className="font-medium text-amber-700">{drawerNotice}</span>}
                     {drawerError && <span className="font-medium text-red-700">{drawerError}</span>}
-                    {!drawerError && drawerDirty && <span className="font-medium text-orange-700">Unsaved changes</span>}
-                    {!drawerError && drawerSaved && <span className="font-medium text-green-700">Saved</span>}
-                    {!drawerError && !drawerDirty && !drawerSaved && <span className="text-gray-500">Editable claim register row</span>}
+                    {!drawerError && !drawerNotice && drawerDirty && <span className="font-medium text-orange-700">Unsaved changes</span>}
+                    {!drawerError && !drawerNotice && drawerSaved && <span className="font-medium text-green-700">Saved</span>}
+                    {!drawerError && !drawerNotice && !drawerDirty && !drawerSaved && <span className="text-gray-500">Editable claim register row</span>}
                   </div>
                   <Button size="sm" onClick={saveSelectedRow} disabled={savingDrawer || !drawerDirty}>
                     {savingDrawer ? 'Saving...' : 'Save changes'}

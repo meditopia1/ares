@@ -1,6 +1,6 @@
 const XLSX = require('xlsx');
 
-const filePath = '../../docs/all members list.xlsx';
+const filePath = '../../apps/frontend/docs/data/all members list.xlsx';
 const searchNumber = 'PAR10021208';
 
 console.log(`Searching for member number: ${searchNumber}\n`);

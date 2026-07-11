@@ -1,6 +1,6 @@
 const XLSX = require('xlsx');
 
-const filePath = process.argv[2] || 'docs/all members list.xlsx';
+const filePath = process.argv[2] || 'apps/frontend/docs/data/all members list.xlsx';
 console.log('📖 Reading Excel file...\n');
 const workbook = XLSX.readFile(filePath);
 const sheet = workbook.Sheets['Sheet1'];

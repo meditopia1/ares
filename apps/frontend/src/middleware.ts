@@ -20,7 +20,6 @@ import { getAuthenticatedUserFromToken } from '@/lib/auth-server';
  * - /api/provider/* (custom provider auth - not ready)
  * - /api/applications (public application submission)
  * - /api/products (public product listing)
- * - /api/feedback (public feedback)
  * - /api/ocr (public OCR processing)
  * - /api/leads (public lead capture)
  */
@@ -65,8 +64,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/admin/rules') ||
     pathname.startsWith('/api/admin/roles') ||
     pathname.startsWith('/api/claims-assessor') ||
-    pathname.startsWith('/api/data-import') ||
-    pathname.startsWith('/api/feedback');
+    pathname.startsWith('/api/data-import');
   if (routeHandlesOwnAuth) {
     return NextResponse.next();
   }
@@ -161,5 +159,4 @@ export const config = {
     '/api/marketing/:path*',
   ]
 };
-
 

@@ -117,7 +117,6 @@ export default function CallCentreTicketsPage() {
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Button onClick={() => router.push('/call-centre/support')}>Open Member Support Queue</Button>
             <Button variant="outline" onClick={() => router.push('/call-centre/members')}>Search a Member</Button>
-            <Button variant="outline" onClick={() => router.push('/admin/feedback')}>Escalate a System Issue</Button>
           </CardContent>
         </Card>
 
@@ -129,7 +128,7 @@ export default function CallCentreTicketsPage() {
           <CardContent className="space-y-3 text-sm text-gray-700">
             <p>1. A newly submitted application needing verification is a live support task.</p>
             <p>2. A member lookup or eligibility issue is resolved through the member and provider tools we wired up.</p>
-            <p>3. A broken screen, missing record, or process defect should be escalated through Feedback.</p>
+            <p>3. A broken screen, missing record, or process defect should be escalated through the support process.</p>
           </CardContent>
         </Card>
       </div>

@@ -22,7 +22,7 @@ importProviders(filePath, startRow, endRow, dryRun)
 
 // Command line arguments
 const args = process.argv.slice(2);
-const filePath = args[0] || '../../docs/providers_rows.csv';
+const filePath = args[0] || '../../apps/frontend/docs/data/providers_rows.csv';
 const startRow = parseInt(args[1]) || 2;
 const endRow = args[2] ? parseInt(args[2]) : null;
 const dryRun = args[3] === '--dry-run';

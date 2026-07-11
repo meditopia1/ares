@@ -76,7 +76,7 @@ async function exportCorrectedMembers() {
   XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
 
   // Write file
-  const filename = 'docs/all members list - CORRECTED.xlsx';
+  const filename = 'apps/frontend/docs/data/all members list - CORRECTED.xlsx';
   XLSX.writeFile(wb, filename);
 
   console.log(`✅ Exported to: ${filename}`);

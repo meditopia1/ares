@@ -6,7 +6,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// THE 9 INSURANCE PLANS - Reference: docs/INSURANCE_PLANS_REFERENCE.md
+// THE 9 INSURANCE PLANS - Reference: apps/frontend/docs/project/INSURANCE_PLANS_REFERENCE.md
 const PLAN_IDS = {
   'Executive Hospital Plan': '9bb038ad-dbf6-480c-a71e-adb93943cb1c',
   'Executive Junior Plan': 'c9f5019e-d584-4fe3-8e59-84682718f6ac',

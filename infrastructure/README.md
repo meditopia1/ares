@@ -69,7 +69,7 @@ curl http://localhost:8000/auth/v1/health
 
 ## Production Deployment (Google Cloud)
 
-See `../docs/SELF_HOSTED_SUPABASE_SETUP.md` for complete production deployment guide.
+See `../apps/frontend/docs/project/SELF_HOSTED_SUPABASE_SETUP.md` for complete production deployment guide.
 
 ### Quick Production Checklist
 

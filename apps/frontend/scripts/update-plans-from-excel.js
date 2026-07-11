@@ -119,7 +119,7 @@ async function updatePlansFromExcel(filePath) {
     });
 }
 
-const filePath = process.argv[2] || 'docs/all members list.xlsx';
+const filePath = process.argv[2] || 'apps/frontend/docs/data/all members list.xlsx';
 updatePlansFromExcel(filePath)
   .then(() => {
     console.log('\n✅ Update completed!');

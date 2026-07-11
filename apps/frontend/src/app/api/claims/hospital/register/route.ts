@@ -66,6 +66,8 @@ const intakeSelect = `
   ocr_confidence,
   ocr_fields,
   raw_text,
+  matched_register_id,
+  review_notes,
   created_at
 `;
 
@@ -144,11 +146,12 @@ export async function GET(request: NextRequest) {
     if (intakeResult.error) throw intakeResult.error;
 
     const rows = await enrichRegisterRows(supabase, registerResult.data || []);
+    const newIntakes = enrichIntakesWithComparison(rows, intakeResult.data || []);
 
     return NextResponse.json({
       rows,
       count: rows.length,
-      newIntakes: intakeResult.data || [],
+      newIntakes,
     });
   } catch (error) {
     console.error('Failed to fetch hospital claims register:', error);
@@ -178,6 +181,85 @@ export async function POST(request: NextRequest) {
 
     if (intakeError || !intake) {
       return NextResponse.json({ error: 'Hospital intake not found' }, { status: 404 });
+    }
+
+    if (intake.document_type === 'claim_form') {
+      const matchedRowId = intake.matched_register_id || null;
+      if (!matchedRowId) {
+        return NextResponse.json(
+          {
+            error: 'Claim form could not be matched to an existing HCR claim',
+            details: 'Please open the claim form and review it personally before making any claim changes.',
+          },
+          { status: 422 }
+        );
+      }
+
+      const { data: matchedRow } = await supabase
+        .from('hospital_claims_register')
+        .select(registerSelect)
+        .eq('id', matchedRowId)
+        .maybeSingle();
+
+      if (!matchedRow) {
+        return NextResponse.json(
+          {
+            error: 'Matched HCR claim could not be found',
+            details: 'Please open the claim form and review it personally before making any claim changes.',
+          },
+          { status: 404 }
+        );
+      }
+
+      const comparison = buildClaimFormComparison(matchedRow, Array.isArray(intake.ocr_fields) ? intake.ocr_fields : []);
+
+      await Promise.all([
+        supabase.from('hospital_claim_intakes').update({
+          reviewed_by: user.id,
+          reviewed_at: new Date().toISOString(),
+          status: 'reviewed',
+          notification_status: 'processed',
+          updated_at: new Date().toISOString(),
+        }).eq('id', intake.id),
+        supabase.from('hosp_claim_audit').insert({
+          register_id: matchedRow.id,
+          action: 'claim_form_review_requested',
+          performed_by: user.id,
+          previous_status: intake.status,
+          new_status: 'reviewed',
+          new_values: {
+            claim_number: matchedRow.claim_number,
+            intake_number: intake.intake_number,
+            document_type: intake.document_type,
+          },
+          notes: comparison.requiresManualReview
+            ? 'Claim form reported major differences. Admin must open the claim form and review it personally.'
+            : 'Claim form matched an existing HCR claim. Admin should open the claim form and review it personally.',
+        }),
+        supabase.from('hosp_claim_history').insert({
+          register_id: matchedRow.id,
+          event_type: 'claim_form_review',
+          event_title: 'Claim form submitted for review',
+          event_detail: comparison.adminPrompt,
+          event_data: {
+            intake_id: intake.id,
+            intake_number: intake.intake_number,
+            major_differences: comparison.majorDifferences,
+          },
+          created_by: user.id,
+        }),
+      ]);
+
+      return NextResponse.json({
+        row: matchedRow,
+        action: 'review_existing_claim',
+        comparison,
+        intake: {
+          ...intake,
+          status: 'reviewed',
+          notification_status: 'processed',
+        },
+      });
     }
 
     if (intake.matched_register_id) {
@@ -687,4 +769,116 @@ function formatPolicyPeriod(startDate: string | null | undefined, now: Date) {
   }
 
   return parts.join(' ');
+}
+
+function enrichIntakesWithComparison(rows: any[], intakes: any[]) {
+  const rowMap = new Map(rows.map((row) => [row.id, row]));
+  return intakes.map((intake) => {
+    if (intake.document_type !== 'claim_form') return intake;
+    const matchedRow = intake.matched_register_id ? rowMap.get(intake.matched_register_id) : null;
+    return {
+      ...intake,
+      comparison: matchedRow
+        ? buildClaimFormComparison(matchedRow, Array.isArray(intake.ocr_fields) ? intake.ocr_fields : [])
+        : {
+            matchedRegisterId: null,
+            matchedClaimNumber: null,
+            requiresManualReview: true,
+            majorDifferences: [
+              {
+                label: 'Claim match',
+                existingValue: 'No existing HCR claim matched',
+                formValue: intake.source_reference || intake.intake_number,
+              },
+            ],
+            adminPrompt: 'Major differences detected. Please open the claim form and review it personally before making any claim changes.',
+          },
+    };
+  });
+}
+
+function buildClaimFormComparison(matchedRow: any, ocrFields: any[]) {
+  const field = (...labels: string[]) => {
+    for (const label of labels) {
+      const match = ocrFields.find((item: any) => item?.label === label);
+      if (match?.value) return String(match.value).trim();
+    }
+    return '';
+  };
+
+  const differences: Array<{ label: string; existingValue: string; formValue: string }> = [];
+  pushDifferenceIfChanged(differences, 'Policy / Member Number', matchedRow.member_number, field('Policy Number', 'Membership Number', 'Detected Member Number'), areEquivalentTokenValues);
+  pushDifferenceIfChanged(differences, 'Authorization Number', matchedRow.auth_number, field('Auth Number', 'Africa-Assist Ref Number'), areEquivalentTokenValues);
+  pushDifferenceIfChanged(differences, 'Patient Name', matchedRow.patient_name, field('Name Of Patient', 'Full name of Patient', 'Member Name and Surname'), areEquivalentNames);
+  pushDifferenceIfChanged(differences, 'Hospital', matchedRow.hospital, field('Hospital Name'), areEquivalentNames);
+  pushDifferenceIfChanged(differences, 'Admission Date', matchedRow.dol, field('Date Of Admission', 'Date of Incident'), areEquivalentDates);
+  pushDifferenceIfChanged(differences, 'Diagnosis / Cause', matchedRow.cause, field('Diagnosis', 'Diagnosis (Initial Request)', 'Incident Description'), areEquivalentDiagnosis);
+
+  return {
+    matchedRegisterId: matchedRow.id,
+    matchedClaimNumber: matchedRow.claim_number || null,
+    requiresManualReview: differences.length > 0,
+    majorDifferences: differences,
+    adminPrompt: differences.length > 0
+      ? 'Major differences detected. Please open the claim form and review it personally before making any claim changes.'
+      : 'Claim form matched an existing HCR claim. Please open the claim form and review it personally before making any claim changes.',
+  };
+}
+
+function pushDifferenceIfChanged(
+  differences: Array<{ label: string; existingValue: string; formValue: string }>,
+  label: string,
+  existingValue: string | null | undefined,
+  formValue: string | null | undefined,
+  comparator: (left: string | null | undefined, right: string | null | undefined) => boolean
+) {
+  const left = (existingValue || '').trim();
+  const right = (formValue || '').trim();
+  if (!left || !right) return;
+  if (comparator(left, right)) return;
+  differences.push({ label, existingValue: left, formValue: right });
+}
+
+function areEquivalentTokenValues(left: string | null | undefined, right: string | null | undefined) {
+  return normalizeToken(left) === normalizeToken(right);
+}
+
+function areEquivalentNames(left: string | null | undefined, right: string | null | undefined) {
+  const a = normalizeName(left);
+  const b = normalizeName(right);
+  return a === b || a.includes(b) || b.includes(a);
+}
+
+function areEquivalentDiagnosis(left: string | null | undefined, right: string | null | undefined) {
+  const a = normalizeName(left);
+  const b = normalizeName(right);
+  if (!a || !b) return true;
+  if (a === b) return true;
+  const aTokens = new Set(a.split(' '));
+  const bTokens = new Set(b.split(' '));
+  return [...aTokens].filter((token) => bTokens.has(token)).length >= Math.min(2, Math.min(aTokens.size, bTokens.size));
+}
+
+function areEquivalentDates(left: string | null | undefined, right: string | null | undefined) {
+  return normalizeComparableDate(left) === normalizeComparableDate(right);
+}
+
+function normalizeComparableDate(value: string | null | undefined) {
+  if (!value) return '';
+  const clean = value.trim();
+  const direct = new Date(clean);
+  if (!Number.isNaN(direct.getTime())) return direct.toISOString().slice(0, 10);
+  const match = clean.match(/(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/);
+  if (!match) return clean;
+  const [, day, month, year] = match;
+  const fullYear = year.length === 2 ? `20${year}` : year;
+  return `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+}
+
+function normalizeToken(value: string | null | undefined) {
+  return (value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+function normalizeName(value: string | null | undefined) {
+  return (value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
 }

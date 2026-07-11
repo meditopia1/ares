@@ -1,5 +1,8 @@
 # Dependencies
 node_modules/
+*.tsbuildinfo
+schema.sql
+apps/frontend/docs/private/
 .pnp
 .pnp.js
 

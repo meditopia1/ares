@@ -1,111 +1,87 @@
-# Day1Health Company Documentation
+# Day1Main Documentation
 
-This folder contains all company documentation used as the source of truth for system implementation.
+This is the single documentation home for the Day1Main project.
+
+## Start Here
+
+- [project/CURRENT_DASHBOARD_ROLES.md](./project/CURRENT_DASHBOARD_ROLES.md) - current dashboard role definition
+- [project/MEDICAL_INSURER_OPERATING_MODEL_REFERENCE.md](./project/MEDICAL_INSURER_OPERATING_MODEL_REFERENCE.md) - current medical-insurer operating model reference
+- [project/STRUCTURE_IMPLEMENTATION_SUMMARY.md](./project/STRUCTURE_IMPLEMENTATION_SUMMARY.md) - current project structure summary
+- [project/TECH_STACK.md](./project/TECH_STACK.md) - current technology stack
+- [claims/workspace/CLAIMS_WORKSPACE_EXCEL_PLUS_DESIGN.md](./claims/workspace/CLAIMS_WORKSPACE_EXCEL_PLUS_DESIGN.md) - hospital claims workspace plan and current flow
+- [netcash/README.md](./netcash/README.md) - Netcash collection and payment processing
+
+## Current Dashboard Roles
+
+In Day1Main planning, a **role** means a unique dashboard or portal experience with its own sidebar and workflow.
+
+1. Admin
+2. Operations
+3. Marketing
+4. Broker
+5. Compliance
+6. Finance
+7. Claims
+8. Provider
+9. Call Centre
+10. Authorization
+11. Member
+12. Onboarding
 
 ## Folder Structure
 
-### 📋 Claims Documentation (`claims/`)
-All claims-related documents including procedures, guidelines, forms, tariffs, and workflows.
+### `project/`
 
-**Subfolders:**
-- `procedures/` - Claims processing procedures
-- `guidelines/` - Adjudication guidelines
-- `forms/` - Claim forms and templates
-- `tariffs/` - Tariff codes and pricing
-- `rejection-codes/` - Rejection code definitions
-- `workflows/` - Process flowcharts
-- `pre-authorization/` - Pre-authorization and GOP documents
+Project-level references, system setup, dashboard roles, plans, member filters, import templates, and provider TODOs.
 
-### 💊 Benefits Documentation (`benefits/`)
-Benefit-related documentation including limits, waiting periods, and exclusions.
+### `data/`
 
-**Subfolders:**
-- `limits/` - Benefit limits and annual caps
-- `waiting-periods/` - Waiting period definitions
-- `exclusions/` - Exclusions and limitations
+Source data files such as member and provider spreadsheets/CSVs.
 
-### ⚖️ Compliance Documentation (`compliance/`)
-Regulatory and compliance documentation.
+### `claims/`
 
-**Subfolders:**
-- `medical-schemes-act/` - Medical Schemes Act requirements
-- `pmb/` - Prescribed Minimum Benefits
-- `cms-guidelines/` - Council for Medical Schemes guidelines
+Claims forms, GOP/pre-authorization templates, tariffs, workflows, and hospital claims workspace documentation.
 
-### 🏥 Operations Documentation (`operations/`)
-Operational documentation including contracts, SLAs, and training.
+### `netcash/`
 
-**Subfolders:**
-- `provider-contracts/` - Provider agreements
-- `sla/` - Service level agreements
-- `training/` - Training materials
+Netcash debit order, transaction, refund, webhook, and reconciliation documentation.
 
-## How to Use
+### `benefits/`
 
-### For Developers
+Benefit limits, waiting periods, exclusions, and benefit configuration references.
 
-When implementing features:
-1. Read relevant documents in this folder
-2. Extract business rules and requirements
-3. Implement according to documented procedures
-4. Reference document sections in code comments
-5. Update steering documents with document references
+### `compliance/`
 
-### For Adding Documents
+Compliance, CMS, PMB, and Medical Schemes Act documentation.
 
-1. Place documents in the appropriate subfolder
-2. Use descriptive filenames (e.g., `claims-adjudication-guidelines-v2.pdf`)
-3. Update the README in that folder if needed
-4. Commit to git for version control
+### `operations/`
 
-### For AI Assistant (Kiro)
+Operational training, SLAs, provider contracts, and process documents.
 
-When working on features:
-1. Check this folder for relevant documents
-2. Read documents to understand business rules
-3. Implement features based on actual company procedures
-4. Reference specific document sections in implementation
-5. Flag any discrepancies between documents and requirements
+### `guides/`
 
-## Document Types Supported
+Implementation guides, status reports, setup notes, SQL snippets, and feature completion notes.
 
-- ✅ PDF documents
-- ✅ Word documents (.docx)
-- ✅ Excel spreadsheets (.xlsx)
-- ✅ Images (flowcharts, diagrams)
-- ✅ Markdown files
+### `internal-review/`
 
-## Version Control
+Internal audits, security reviews, implementation reviews, and historical technical assessments.
 
-All documents in this folder are tracked in git. When updating documents:
-1. Replace the old version
-2. Commit with a descriptive message
-3. Document major changes in the folder's README
+### `cover plan brochures/`
 
-## Security Note
+Plan brochures and public-facing product PDFs.
 
-⚠️ **Important:** This folder contains internal company documents. Ensure:
-- Documents are not exposed in public routes
-- Sensitive information is redacted if needed
-- Access is restricted to authorized personnel
-- Documents comply with POPIA (Protection of Personal Information Act)
+### `private/`
 
-## Related Folders
+Local/private notes that should not be treated as public product documentation.
 
-- `/public/plan exact wording/` - Policy documents (public-facing)
-- `/public/brochures as text/` - Plan brochures (public-facing)
-- `/.kiro/steering/` - AI steering documents and implementation guides
+## Documentation Rules
+
+1. Keep all project documentation under this folder.
+2. Do not create a second root `docs/` folder.
+3. Use dashboard-role terminology from `project/CURRENT_DASHBOARD_ROLES.md`.
+4. Put provider-specific payment docs in their own folder. Netcash remains under `netcash/`.
+5. Keep claims and GOP material under `claims/`.
 
 ## Last Updated
 
-April 16, 2026
-
-## Questions?
-
-If you're unsure where to place a document, consider:
-- **Is it about claims processing?** → `claims/`
-- **Is it about benefits and limits?** → `benefits/`
-- **Is it regulatory/compliance?** → `compliance/`
-- **Is it operational/contractual?** → `operations/`
-
-When in doubt, place it in the most relevant folder and update the README.
+July 11, 2026

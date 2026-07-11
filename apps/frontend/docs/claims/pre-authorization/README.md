@@ -77,4 +77,4 @@ When implemented, it will:
 
 ## Related Files
 
-- See: `.kiro/steering/provider-claims-system.md` (Section: Pre-Authorization System)
+- See: `../workspace/CLAIMS_WORKSPACE_EXCEL_PLUS_DESIGN.md` and `../../project/STRUCTURE_IMPLEMENTATION_SUMMARY.md`

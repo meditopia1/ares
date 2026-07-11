@@ -83,7 +83,7 @@ async function importProviders(filePath, startRow = 2, endRow = null) {
   console.log(`Errors: ${errorCount}`);
 }
 
-const filePath = process.argv[2] || '../../docs/providers_rows.csv';
+const filePath = process.argv[2] || '../../apps/frontend/docs/data/providers_rows.csv';
 const startRow = parseInt(process.argv[3]) || 2;
 const endRow = process.argv[4] ? parseInt(process.argv[4]) : null;
 

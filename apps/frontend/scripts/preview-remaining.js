@@ -1,7 +1,7 @@
 require('dotenv').config({ path: '.env.local' });
 const XLSX = require('xlsx');
 
-const filePath = '../../docs/all members list.xlsx';
+const filePath = '../../apps/frontend/docs/data/all members list.xlsx';
 const workbook = XLSX.readFile(filePath);
 const data = XLSX.utils.sheet_to_json(workbook.Sheets['Sheet1']);
 

@@ -32,7 +32,7 @@ async function checkBenefitsData() {
 
   if (btError) {
     console.error('❌ benefit_types table error:', btError.message);
-    console.log('   Table may not exist. Need to run: docs/guides/SUPABASE_RUN_THIS_SQL.sql');
+    console.log('   Table may not exist. Need to run: apps/frontend/docs/guides/SUPABASE_RUN_THIS_SQL.sql');
   } else {
     console.log(`✅ benefit_types table exists with ${benefitTypes?.length || 0} sample records`);
     if (benefitTypes && benefitTypes.length > 0) {
@@ -50,7 +50,7 @@ async function checkBenefitsData() {
 
   if (pbError) {
     console.error('❌ product_benefits table error:', pbError.message);
-    console.log('   Table may not exist. Need to run: docs/guides/SUPABASE_RUN_THIS_SQL.sql');
+    console.log('   Table may not exist. Need to run: apps/frontend/docs/guides/SUPABASE_RUN_THIS_SQL.sql');
   } else {
     console.log(`✅ product_benefits table exists`);
     
@@ -89,7 +89,7 @@ async function checkBenefitsData() {
   }
 
   console.log('\n📋 Summary:');
-  console.log('   If tables don\'t exist, run: docs/guides/SUPABASE_RUN_THIS_SQL.sql');
+  console.log('   If tables don\'t exist, run: apps/frontend/docs/guides/SUPABASE_RUN_THIS_SQL.sql');
   console.log('   If tables exist but no data, benefits need to be configured in Policy Creator');
 }
 

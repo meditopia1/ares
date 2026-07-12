@@ -140,13 +140,13 @@ if (!authError) {
 
 ### SQL Migration Files (HISTORICAL)
 
-7. **`supabase/ADD_PROVIDER_USER_LINK.sql`** (Line 5)
-   - ℹ️ Historical migration that added the column
-   - Action: Keep for history, add comment that column was later removed
+7. **`supabase/ADD_PROVIDER_USER_LINK.sql`** (removed)
+   - ℹ️ Historical one-off SQL that added provider login columns
+   - Action: Removed from the active repository to avoid reintroducing plaintext password guidance
 
-8. **`supabase/ADD_PROVIDER_LOGIN_COLUMNS.sql`** (Line 4)
-   - ℹ️ Historical migration that added the column
-   - Action: Keep for history, add comment that column was later removed
+8. **`supabase/ADD_PROVIDER_LOGIN_COLUMNS.sql`** (removed)
+   - ℹ️ Historical one-off SQL that added provider login password fields
+   - Action: Removed from the active repository to avoid reintroducing plaintext password guidance
 
 ### Documentation (NEEDS UPDATING)
 
@@ -296,4 +296,3 @@ WHERE table_name = 'providers' AND column_name = 'login_password';
 - Before: 🔴 CRITICAL vulnerabilities
 - After: 🟡 MEDIUM (provider login broken, but no plaintext passwords)
 - Target: 🟢 LOW (after fixing provider login)
-

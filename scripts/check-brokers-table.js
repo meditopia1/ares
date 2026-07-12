@@ -23,7 +23,7 @@ async function checkBrokersTable() {
   if (error) {
     console.error('❌ Error querying brokers table:', error.message);
     console.log('\n⚠️  Brokers table may not exist or has permission issues');
-    console.log('Run the BROKER_MIGRATION_SQL.sql script in Supabase SQL Editor');
+    console.log('Check the active Supabase migrations and broker setup scripts before creating or changing this table.');
     return;
   }
 
@@ -44,7 +44,7 @@ async function checkBrokersTable() {
       console.log(`  ${broker.code || broker.id}: ${broker.name || 'N/A'}`);
     });
   } else {
-    console.log('⚠️  No broker records found. Run the INSERT statements from BROKER_MIGRATION_SQL.sql');
+    console.log('⚠️  No broker records found. Verify broker seed/import scripts before inserting data.');
   }
 
   // Count total brokers

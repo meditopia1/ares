@@ -17,7 +17,7 @@ Successfully implemented the public landing page viewing system with dynamic rou
   - priority-plan.JPG
 
 ### 2. Component Migration
-All landing page components migrated from `day1landing/` to `apps/frontend/src/components/landing-page/`:
+Landing page components were migrated into the active frontend at `apps/frontend/src/components/landing-page/`. The old `day1landing/` source copy has since been removed from the repository to avoid duplicate funnel implementations:
 - PlanSlider.tsx (main carousel with 4 health plans)
 - ValuePromiseStrip.tsx
 - ThreePlanCards.tsx

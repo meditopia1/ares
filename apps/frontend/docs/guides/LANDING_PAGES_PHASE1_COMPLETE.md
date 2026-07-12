@@ -67,7 +67,7 @@
 
 ### Phase 2: Public Landing Page Route
 - Create `/lp/[slug]` route in frontend
-- Migrate day1landing components
+- Use the migrated landing components in `apps/frontend/src/components/landing-page/`
 - Dynamic rendering based on database content
 - Lead capture form integration
 - Analytics tracking (visit duration)

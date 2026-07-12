@@ -61,11 +61,11 @@ Operational training, SLAs, provider contracts, and process documents.
 
 ### `guides/`
 
-Implementation guides, status reports, setup notes, SQL snippets, and feature completion notes.
+Current setup notes, operational guides, and narrow implementation references. Old status reports, completion notes, and stale copy-paste SQL snippets should not live here.
 
 ### `internal-review/`
 
-Internal audits, security reviews, implementation reviews, and historical technical assessments.
+Security/OCR review notes that are still useful. Historical implementation-complete notes should be removed once superseded by current project docs.
 
 ### `cover plan brochures/`
 
@@ -85,4 +85,4 @@ Local/private notes that should not be treated as public product documentation.
 
 ## Last Updated
 
-July 11, 2026
+July 12, 2026

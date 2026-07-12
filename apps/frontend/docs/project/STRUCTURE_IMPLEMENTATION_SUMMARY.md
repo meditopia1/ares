@@ -74,8 +74,8 @@ apps/frontend/docs/
 ├── benefits/                  # Benefit rules, waiting periods, limits, exclusions
 ├── compliance/                # Compliance, CMS, PMB, Medical Schemes Act material
 ├── operations/                # Operational process documents
-├── guides/                    # Implementation guides and feature notes
-├── internal-review/           # Historical audits and technical reviews
+├── guides/                    # Current setup and operational guides
+├── internal-review/           # Current security/OCR review notes
 ├── data/                      # Source spreadsheets and CSV files
 ├── cover plan brochures/      # Product brochures
 └── private/                   # Local/private notes

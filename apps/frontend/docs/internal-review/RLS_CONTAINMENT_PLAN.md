@@ -20,7 +20,7 @@ This means the current problem is not just "RLS not verified." Sensitive busines
 
 ### Staff access can be tied to authentication
 
-The app authenticates department users through Supabase Auth, then maps them into the custom `users` table by email in [apps/frontend/src/lib/auth-server.ts](/e:/wind new/day1main/apps/frontend/src/lib/auth-server.ts:1).
+The app authenticates department users through Supabase Auth, then maps them into the custom `users` table by email in [apps/frontend/src/lib/auth-server.ts](../../../../apps/frontend/src/lib/auth-server.ts:1).
 
 Live data confirms:
 
@@ -32,7 +32,7 @@ This means staff-facing RLS can be implemented now by mapping the authenticated 
 
 ### Provider access is only partially linkable
 
-The provider auth path expects `providers.user_id = auth.uid()` in [apps/frontend/src/lib/auth-server.ts](/e:/wind new/day1main/apps/frontend/src/lib/auth-server.ts:54).
+The provider auth path expects `providers.user_id = auth.uid()` in [apps/frontend/src/lib/auth-server.ts](../../../../apps/frontend/src/lib/auth-server.ts:54).
 
 Live data confirms:
 
@@ -43,7 +43,7 @@ This means provider-specific RLS is only safely enforceable for linked provider 
 
 ### Member self-access is not yet linkable
 
-Members are still using a custom email and PIN login flow in [apps/frontend/src/app/api/member/login/route.ts](/e:/wind new/day1main/apps/frontend/src/app/api/member/login/route.ts:1).
+Members are still using a custom email and PIN login flow in [apps/frontend/src/app/api/member/login/route.ts](../../../../apps/frontend/src/app/api/member/login/route.ts:1).
 
 Live data confirms:
 
@@ -105,8 +105,8 @@ RLS alone will not fix every current exposure because some routes still use `ser
 
 ### High-risk member routes
 
-- [apps/frontend/src/app/api/member/profile/route.ts](/e:/wind new/day1main/apps/frontend/src/app/api/member/profile/route.ts:1)
-- [apps/frontend/src/app/api/member/claims/route.ts](/e:/wind new/day1main/apps/frontend/src/app/api/member/claims/route.ts:1)
+- [apps/frontend/src/app/api/member/profile/route.ts](../../../../apps/frontend/src/app/api/member/profile/route.ts:1)
+- [apps/frontend/src/app/api/member/claims/route.ts](../../../../apps/frontend/src/app/api/member/claims/route.ts:1)
 
 Problems:
 
@@ -126,9 +126,9 @@ Status:
 
 Relevant files:
 
-- [apps/frontend/src/app/api/provider/claims/route.ts](/e:/wind new/day1main/apps/frontend/src/app/api/provider/claims/route.ts:1)
-- [apps/frontend/src/app/provider/dashboard/page.tsx](/e:/wind new/day1main/apps/frontend/src/app/provider/dashboard/page.tsx:1)
-- [apps/frontend/src/app/provider/claims/history/page.tsx](/e:/wind new/day1main/apps/frontend/src/app/provider/claims/history/page.tsx:1)
+- [apps/frontend/src/app/api/provider/claims/route.ts](../../../../apps/frontend/src/app/api/provider/claims/route.ts:1)
+- [apps/frontend/src/app/provider/dashboard/page.tsx](../../../../apps/frontend/src/app/provider/dashboard/page.tsx:1)
+- [apps/frontend/src/app/provider/claims/history/page.tsx](../../../../apps/frontend/src/app/provider/claims/history/page.tsx:1)
 
 ## Recommended containment phases
 
@@ -138,12 +138,12 @@ Apply RLS to sensitive tables and remove `anon` read access.
 
 Recommended draft for first apply:
 
-- [supabase/migrations/20260601_phase1_anon_block_containment.sql](/e:/wind new/day1main/supabase/migrations/20260601_phase1_anon_block_containment.sql:1)
-- Verification script: [supabase/verify-phase1-rls.js](/e:/wind new/day1main/supabase/verify-phase1-rls.js:1)
+- [supabase/migrations/20260601_phase1_anon_block_containment.sql](../../../../supabase/migrations/20260601_phase1_anon_block_containment.sql:1)
+- Verification script: [supabase/verify-phase1-rls.js](../../../../supabase/verify-phase1-rls.js:1)
 
 Broader follow-up draft:
 
-- [supabase/migrations/20260601_emergency_rls_containment.sql](/e:/wind new/day1main/supabase/migrations/20260601_emergency_rls_containment.sql:1)
+- [supabase/migrations/20260601_emergency_rls_containment.sql](../../../../supabase/migrations/20260601_emergency_rls_containment.sql:1)
 
 Success condition:
 

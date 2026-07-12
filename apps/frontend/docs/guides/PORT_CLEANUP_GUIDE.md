@@ -12,7 +12,7 @@ We've added automatic port cleanup that runs before starting the dev servers.
 The cleanup script runs automatically when you start the dev servers:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 This will:
@@ -25,7 +25,7 @@ If you need to clean up ports manually:
 
 **Option 1: Run the Node script**
 ```bash
-npm run kill-ports
+pnpm kill-ports
 ```
 
 **Option 2: Run the batch file (Windows)**
@@ -42,7 +42,7 @@ node kill-duplicate-ports.js
 To ensure a completely clean start:
 
 ```bash
-npm run dev:clean
+pnpm dev:clean
 ```
 
 This explicitly runs the cleanup before starting servers.
@@ -100,7 +100,7 @@ const PORTS_TO_CHECK = [3000, 3001, 8080]; // Add your ports here
 ## Prevention
 
 To prevent duplicates in the future:
-1. Always use `npm run dev` (which includes cleanup)
+1. Always use `pnpm dev` (which includes cleanup)
 2. Stop servers properly with Ctrl+C
 3. Don't run multiple terminal sessions with dev servers
 4. Use the cleanup script if you notice issues

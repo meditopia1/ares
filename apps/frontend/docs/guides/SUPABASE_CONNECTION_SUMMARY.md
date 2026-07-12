@@ -2,7 +2,7 @@
 
 ## Status
 
-Supabase is used as the hosted auth, database, and storage backend for this project.
+Supabase/PostgreSQL is used for auth-backed data access, application data, and storage-backed document flows.
 
 ## Environment Variables
 
@@ -21,7 +21,8 @@ Real values belong in local `.env.local` files or deployment secret stores, not 
 
 ## Documentation Location
 
-Supabase documentation and scripts live in `supabase/`.
+Current infrastructure direction is documented in `apps/frontend/docs/project/CURRENT_INFRASTRUCTURE.md`.
+Supabase migrations and operational helpers live in `supabase/`.
 
 ## Quick Test
 
@@ -30,6 +31,8 @@ cd supabase
 node test-connection.js
 ```
 
+Only run connection checks against the intended environment. `apps/frontend/.env` and `apps/frontend/.env.local` may point at different Supabase databases.
+
 ## Database Shape
 
 Core tables:
@@ -37,10 +40,11 @@ Core tables:
 - `contacts` - master record for leads, applicants, and members
 - `applications` - application data linked to contacts
 - `members` - active member records
-- `application_dependents` and `member_dependents`
+- `application_dependents` and `member_dependants`
 - `contact_interactions` and `popia_audit_log`
 - `users`, `roles`, `permissions`
-- `policies`, `claims`, `providers`, `products`
+- `claims`, `providers`, `products`, `brokers`
+- `hospital_claim_intakes`, `hospital_claims_register`, and related hospital-claims tables
 
 ## Security Notes
 

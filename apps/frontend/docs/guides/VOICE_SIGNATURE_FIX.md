@@ -78,7 +78,7 @@ applications/
    ```bash
    # Stop current server (Ctrl+C)
    cd apps/frontend
-   npm run dev
+   pnpm dev
    ```
 
 2. **Test Voice Recording:**

@@ -51,8 +51,8 @@ Current state:
 
 Supporting references:
 
-- [supabase/verify-phase1-rls.js](/e:/wind new/day1main/supabase/verify-phase1-rls.js:1)
-- [apps/frontend/docs/internal-review/RLS_CONTAINMENT_PLAN.md](/e:/wind new/day1main/apps/frontend/docs/internal-review/RLS_CONTAINMENT_PLAN.md:1)
+- [supabase/verify-phase1-rls.js](../../../../supabase/verify-phase1-rls.js:1)
+- [apps/frontend/docs/internal-review/RLS_CONTAINMENT_PLAN.md](../../../../apps/frontend/docs/internal-review/RLS_CONTAINMENT_PLAN.md:1)
 
 Practical meaning:
 
@@ -73,12 +73,12 @@ This has already been applied across:
 
 Supporting references:
 
-- [apps/frontend/src/lib/auth-server.ts](/e:/wind new/day1main/apps/frontend/src/lib/auth-server.ts:26)
-- [apps/frontend/src/app/api/operations/members/route.ts](/e:/wind new/day1main/apps/frontend/src/app/api/operations/members/route.ts:1)
-- [apps/frontend/src/app/api/claims-assessor/queue/route.ts](/e:/wind new/day1main/apps/frontend/src/app/api/claims-assessor/queue/route.ts:1)
-- [apps/frontend/src/app/api/finance/payment-batches/route.ts](/e:/wind new/day1main/apps/frontend/src/app/api/finance/payment-batches/route.ts:1)
-- [apps/frontend/src/app/api/admin/claims/route.ts](/e:/wind new/day1main/apps/frontend/src/app/api/admin/claims/route.ts:1)
-- [apps/frontend/src/app/api/admin/members/route.ts](/e:/wind new/day1main/apps/frontend/src/app/api/admin/members/route.ts:1)
+- [apps/frontend/src/lib/auth-server.ts](../../../../apps/frontend/src/lib/auth-server.ts:26)
+- [apps/frontend/src/app/api/operations/members/route.ts](../../../../apps/frontend/src/app/api/operations/members/route.ts:1)
+- [apps/frontend/src/app/api/claims-assessor/queue/route.ts](../../../../apps/frontend/src/app/api/claims-assessor/queue/route.ts:1)
+- [apps/frontend/src/app/api/finance/payment-batches/route.ts](../../../../apps/frontend/src/app/api/finance/payment-batches/route.ts:1)
+- [apps/frontend/src/app/api/admin/claims/route.ts](../../../../apps/frontend/src/app/api/admin/claims/route.ts:1)
+- [apps/frontend/src/app/api/admin/members/route.ts](../../../../apps/frontend/src/app/api/admin/members/route.ts:1)
 
 Practical meaning:
 
@@ -98,8 +98,8 @@ What is already present:
 
 Supporting references:
 
-- [apps/frontend/src/lib/auth-server.ts](/e:/wind new/day1main/apps/frontend/src/lib/auth-server.ts:1)
-- [apps/frontend/docs/internal-review/RLS_CONTAINMENT_PLAN.md](/e:/wind new/day1main/apps/frontend/docs/internal-review/RLS_CONTAINMENT_PLAN.md:165)
+- [apps/frontend/src/lib/auth-server.ts](../../../../apps/frontend/src/lib/auth-server.ts:1)
+- [apps/frontend/docs/internal-review/RLS_CONTAINMENT_PLAN.md](../../../../apps/frontend/docs/internal-review/RLS_CONTAINMENT_PLAN.md:165)
 
 Practical meaning:
 
@@ -117,7 +117,7 @@ What is already done:
 
 Supporting references:
 
-- [apps/frontend/src/app/api/provider/claims/route.ts](/e:/wind new/day1main/apps/frontend/src/app/api/provider/claims/route.ts:1)
+- [apps/frontend/src/app/api/provider/claims/route.ts](../../../../apps/frontend/src/app/api/provider/claims/route.ts:1)
 
 Practical meaning:
 

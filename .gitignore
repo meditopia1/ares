@@ -1,5 +1,11 @@
 # Dependencies
 node_modules/
+.npm-cache/
+
+# Temporary scratch files
+tmp/
+
+# Build artifacts
 *.tsbuildinfo
 schema.sql
 apps/frontend/docs/private/

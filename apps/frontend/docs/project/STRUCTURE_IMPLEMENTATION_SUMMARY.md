@@ -10,7 +10,6 @@ This document replaces older project structure notes. The single documentation h
 day1main-system/
 ├── apps/
 │   └── frontend/              # Next.js application
-├── infrastructure/            # Infrastructure notes
 ├── apps/frontend/docs/        # Single project documentation home
 ├── package.json               # Root workspace configuration
 └── pnpm-lock.yaml             # Workspace lockfile
@@ -86,6 +85,7 @@ apps/frontend/docs/
 
 - Netcash is the active payment collection path.
 - Qsure material has been removed from active documentation.
+- Current infrastructure direction is documented in [CURRENT_INFRASTRUCTURE.md](./CURRENT_INFRASTRUCTURE.md).
 - The feedback feature has been removed from runtime navigation and API routes.
 - Hospital claims are handled through the hospital claims workspace and related GOP intake flow.
 - Africa Assist can submit GOP documents through the Authorization dashboard, which feeds the Claims hospital workspace notification flow.

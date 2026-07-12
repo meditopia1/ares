@@ -302,8 +302,8 @@ Response:
 
 ## Database Connection
 
-**Connected to**: Supabase (ldygmpaipxbokxzyzyti)
-**URL**: https://ldygmpaipxbokxzyzyti.supabase.co
+**Connected to**: Supabase (<current-project-ref>)
+**URL**: https://<current-supabase-url>
 
 **Real Schema Used**:
 - ✅ Members table (57 columns)

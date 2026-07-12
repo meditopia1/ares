@@ -1,101 +1,30 @@
-# Supabase Documentation Index
+# Supabase Folder Index
 
-## 📖 Documentation Files
+**Last updated:** July 12, 2026
 
-### 🚀 [QUICK_START.md](./QUICK_START.md)
-**Start here!** 30-second guide to get connected.
-- Test connection command
-- Environment variables
-- Key tables overview
-- Code example
+This folder is for database migrations, schema support scripts, and Supabase/Postgres operational helpers.
 
-### 📘 [README.md](./README.md)
-**Complete reference guide** for Supabase connection.
-- Project information
-- Connection details
-- Verification steps
-- Database schema
-- Migration guide
-- Troubleshooting
-- Client usage examples
+## Current Rule
 
-### 📁 [FOLDER_STRUCTURE.md](./FOLDER_STRUCTURE.md)
-**Folder organization** and file descriptions.
-- What each file does
-- What's included/excluded
-- Quick start commands
-- Remote vs local setup
+Do not treat hardcoded historical project refs in old notes as current. The current Supabase environments are defined by runtime environment files and provider dashboards:
 
----
+- `apps/frontend/.env`
+- `apps/frontend/.env.local`
+- Vercel environment variables
+- Supabase dashboards
 
-## 🎯 Choose Your Path
+Do not commit passwords, service-role secrets, database URLs with passwords, or one-off dump files.
 
-### I'm New Here
-1. Read [QUICK_START.md](./QUICK_START.md)
-2. Run `node test-connection.js`
-3. Done! ✅
+## Important Folders
 
-### I Need Details
-1. Read [README.md](./README.md)
-2. Check [FOLDER_STRUCTURE.md](./FOLDER_STRUCTURE.md)
-3. Review migration files in `migrations/`
+- `migrations/` - reviewed schema migrations that belong in Git
+- root `supabase/*.js` - operational helpers and inspection scripts
+- root `supabase/*.sql` - only keep reviewed SQL that is still useful and not a stale one-off
 
-### I'm Troubleshooting
-1. Run `node test-connection.js`
-2. Check README.md troubleshooting section
-3. Verify environment variables
+## Related Current Docs
 
----
-
-## 🔧 Quick Commands
-
-```bash
-# Test connection
-node test-connection.js
-
-# Apply migrations
-supabase db push
-
-# Check CLI version
-supabase --version
-```
-
----
-
-## 📊 Project Info
-
-**Project ID**: ldygmpaipxbokxzyzyti  
-**URL**: https://ldygmpaipxbokxzyzyti.supabase.co  
-**Dashboard**: https://supabase.com/dashboard/project/ldygmpaipxbokxzyzyti
-
----
-
-## 🗂️ Files in This Folder
-
-```
-supabase/
-├── INDEX.md                     ← You are here
-├── QUICK_START.md              ← Start here (30 sec guide)
-├── README.md                   ← Complete guide
-├── FOLDER_STRUCTURE.md         ← Folder organization
-├── test-connection.js          ← Connection test script
-├── config.toml                 ← Supabase config
-└── migrations/                 ← Database migrations
-    ├── 20260122_hybrid_contacts.sql
-    └── 20260123_add_consent_fields_to_applications.sql
-```
-
----
-
-## 💡 Tips for Other Agents
-
-1. **Always start with QUICK_START.md**
-2. **Run test-connection.js to verify**
-3. **Use README.md as reference**
-4. **No local setup needed** - using remote Supabase
-5. **Environment variables** are in app folders, not here
-
----
-
-**Last Updated**: January 23, 2026  
-**Status**: ✅ Verified and Working
+- `apps/frontend/docs/project/CURRENT_INFRASTRUCTURE.md`
+- `apps/frontend/docs/project/TECH_STACK.md`
+- `apps/frontend/docs/project/STRUCTURE_IMPLEMENTATION_SUMMARY.md`
+- `apps/frontend/docs/claims/workspace/CLAIMS_WORKSPACE_EXCEL_PLUS_DESIGN.md`
+- `apps/frontend/docs/netcash/README.md`

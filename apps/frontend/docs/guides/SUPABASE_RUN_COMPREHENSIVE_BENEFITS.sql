@@ -1,6 +1,6 @@
 -- ============================================================================
 -- COPY THIS ENTIRE FILE AND RUN IN SUPABASE SQL EDITOR
--- Go to: https://supabase.com/dashboard/project/ldygmpaipxbokxzyzyti/sql/new
+-- Go to: Supabase dashboard for the current project/sql/new
 -- ============================================================================
 
 -- Benefit Plan Documents (Store original uploaded documents)

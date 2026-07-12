@@ -29,7 +29,7 @@
    - Should change to "✓ Voice recorded" within 2-3 seconds
    - Open browser console (F12) and check for:
      - Upload success message
-     - URL starting with `https://ldygmpaipxbokxzyzyti.supabase.co/storage/v1/object/public/applications/voice/`
+     - URL starting with `https://<current-supabase-url>/storage/v1/object/public/applications/voice/`
 
 4. **Test Playback:**
    - Click "🔊 Listen" button
@@ -55,7 +55,7 @@
 3. **Verify Upload:**
    - Open browser console (F12) and check for:
      - Upload success message
-     - URL starting with `https://ldygmpaipxbokxzyzyti.supabase.co/storage/v1/object/public/applications/signatures/`
+     - URL starting with `https://<current-supabase-url>/storage/v1/object/public/applications/signatures/`
 
 4. **Test Clear:**
    - Click "Clear" button
@@ -108,7 +108,7 @@
 ### Voice Recording:
 - ✅ Records audio successfully
 - ✅ Uploads to Supabase Storage
-- ✅ URL format: `https://ldygmpaipxbokxzyzyti.supabase.co/storage/v1/object/public/applications/voice/TEMP-1234567890.webm`
+- ✅ URL format: `https://<current-supabase-url>/storage/v1/object/public/applications/voice/TEMP-1234567890.webm`
 - ✅ Playback works in application
 - ✅ Playback works in admin panel
 - ✅ Shows duration (e.g., "0:15 / 0:15")
@@ -116,7 +116,7 @@
 ### Digital Signature:
 - ✅ Captures signature on canvas
 - ✅ Uploads to Supabase Storage
-- ✅ URL format: `https://ldygmpaipxbokxzyzyti.supabase.co/storage/v1/object/public/applications/signatures/TEMP-1234567890.png`
+- ✅ URL format: `https://<current-supabase-url>/storage/v1/object/public/applications/signatures/TEMP-1234567890.png`
 - ✅ Displays in application
 - ✅ Displays in admin panel
 - ✅ High quality PNG image
@@ -147,7 +147,7 @@
 
 **Problem:** Signature not displaying in admin
 - **Solution:** Check if URL is a data URL (starts with `data:image/png`)
-- Should be storage URL (starts with `https://ldygmpaipxbokxzyzyti.supabase.co`)
+- Should be storage URL (starts with `https://<current-supabase-url>`)
 
 ### General Issues:
 

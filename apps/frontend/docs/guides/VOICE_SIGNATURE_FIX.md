@@ -89,7 +89,7 @@ applications/
    - Wait for "Uploading to storage..." message
    - Verify "✓ Voice recorded" appears
    - Check browser console for upload success
-   - Verify voice URL starts with `https://ldygmpaipxbokxzyzyti.supabase.co/storage/v1/object/public/applications/voice/`
+   - Verify voice URL starts with `https://<current-supabase-url>/storage/v1/object/public/applications/voice/`
 
 3. **Test Digital Signature:**
    - Draw signature on canvas
@@ -97,7 +97,7 @@ applications/
    - Wait for "Uploading..." message
    - Verify "✓ Signature saved" appears
    - Check browser console for upload success
-   - Verify signature URL starts with `https://ldygmpaipxbokxzyzyti.supabase.co/storage/v1/object/public/applications/signatures/`
+   - Verify signature URL starts with `https://<current-supabase-url>/storage/v1/object/public/applications/signatures/`
 
 4. **Submit Application:**
    - Complete all required fields
@@ -128,8 +128,8 @@ applications/
 
 ## Database Fields
 Both fields store permanent Supabase Storage URLs:
-- `voice_recording_url` - `https://ldygmpaipxbokxzyzyti.supabase.co/storage/v1/object/public/applications/voice/...`
-- `signature_url` - `https://ldygmpaipxbokxzyzyti.supabase.co/storage/v1/object/public/applications/signatures/...`
+- `voice_recording_url` - `https://<current-supabase-url>/storage/v1/object/public/applications/voice/...`
+- `signature_url` - `https://<current-supabase-url>/storage/v1/object/public/applications/signatures/...`
 
 ## Rollback Plan
 If issues occur:

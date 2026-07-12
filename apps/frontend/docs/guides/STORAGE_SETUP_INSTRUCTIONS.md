@@ -6,7 +6,7 @@ Storage bucket exists but RLS (Row Level Security) policies are blocking uploads
 ## Quick Fix (Manual - 2 minutes)
 
 ### Option 1: Disable RLS (Easiest for Development)
-1. Go to Supabase Dashboard: https://supabase.com/dashboard/project/ldygmpaipxbokxzyzyti
+1. Open the Supabase dashboard for the current project
 2. Click **Storage** in left sidebar
 3. Click on **applications** bucket
 4. Click **Policies** tab
@@ -19,7 +19,7 @@ Storage bucket exists but RLS (Row Level Security) policies are blocking uploads
 11. Click **Save**
 
 ### Option 2: Run SQL Policies (Recommended for Production)
-1. Go to Supabase Dashboard: https://supabase.com/dashboard/project/ldygmpaipxbokxzyzyti
+1. Open the Supabase dashboard for the current project
 2. Click **SQL Editor** in left sidebar
 3. Click **New Query**
 4. Copy and paste the contents of `setup-storage-policies.sql`

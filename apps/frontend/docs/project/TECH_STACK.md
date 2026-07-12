@@ -1,6 +1,6 @@
 # Day1Main Technology Stack
 
-**Last updated:** July 11, 2026
+**Last updated:** July 12, 2026
 
 This document replaces older project technology notes.
 
@@ -44,17 +44,17 @@ This document replaces older project technology notes.
 From `apps/frontend`:
 
 ```bash
-npm run dev
-npm run build
-npm run typecheck
-npm test
+pnpm dev
+pnpm build
+pnpm typecheck
+pnpm test
 ```
 
 The local dev server uses port `3001` via the frontend `dev` script.
 
 ## Current Caveat
 
-`npm run typecheck` currently reports existing test typing issues around Jest DOM matchers and one missing test import. These are separate from the feedback cleanup and docs consolidation work.
+`pnpm typecheck` currently reports existing test typing issues around Jest DOM matchers and one missing test import. These are separate from the feedback cleanup and docs consolidation work.
 
 ## Documentation Rules
 

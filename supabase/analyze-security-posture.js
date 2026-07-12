@@ -218,9 +218,9 @@ async function analyzeSecurityPosture() {
   console.log('   10. Scalability: ✅ Well within capacity');
   
   console.log('\n🌍 DATA LOCATION CONSIDERATION:');
-  console.log('   Current: Supabase (likely AWS ap-southeast-1 Singapore)');
-  console.log('   Recommended for SA: Google Cloud SQL PostgreSQL (africa-south1 Johannesburg)');
-  console.log('   Reason: Local data residency, POPIA positioning, insurer confidence');
+  console.log('   Current: Supabase/PostgreSQL environment defined by runtime env vars');
+  console.log('   Verify source/target database before running this report');
+  console.log('   Reason: Environment URLs can differ between local, clone, and Vercel deployments');
   
   console.log('\n' + '='.repeat(100));
 }

@@ -20,13 +20,9 @@ Use this folder when working on:
 
 ## Documents
 
+- [CURRENT_NETCASH_WORKSTATE.md](./CURRENT_NETCASH_WORKSTATE.md) - current Netcash implementation direction and scope
 - [MONEY_COLLECTION_METHODS.md](./MONEY_COLLECTION_METHODS.md) - collection methods and operational overview
-- [DEBIT_ORDER_SYSTEM_COMPLETE.md](./DEBIT_ORDER_SYSTEM_COMPLETE.md) - debit order system implementation summary
-- [DEBIT_ORDER_DASHBOARD_COMPLETE.md](./DEBIT_ORDER_DASHBOARD_COMPLETE.md) - Operations dashboard and Netcash UI flow
-- [DEBIT_ORDER_TEST_DATA_READY.md](./DEBIT_ORDER_TEST_DATA_READY.md) - test data and Netcash references
-- [TRANSACTION_TRACKING_COMPLETE.md](./TRANSACTION_TRACKING_COMPLETE.md) - transaction tracking design
 - [WEBHOOK_TESTING_GUIDE.md](./WEBHOOK_TESTING_GUIDE.md) - Netcash webhook testing and handling
-- [REFUND_SYSTEM_COMPLETE.md](./REFUND_SYSTEM_COMPLETE.md) - refund workflow and Netcash refund integration notes
 - [DAY1HEALTH_DATABASE_SCHEMA.md](./DAY1HEALTH_DATABASE_SCHEMA.md) - payment/debit-order schema notes
 
 ## Build Rule

@@ -1,24 +1,16 @@
 # Adjudication Guidelines
 
-This folder contains guidelines for claims adjudication and decision-making.
+This folder contains claims decision-support material and adjudication guidance.
 
-## Documents to Add
+## Typical Coverage
 
-- When to approve/reject/pend claims
-- Amount calculation rules
-- Pre-authorization requirements
-- PMB (Prescribed Minimum Benefits) handling
-- Fraud detection guidelines
-- Clinical review criteria
-- Co-payment rules
-- Network vs out-of-network guidelines
-
-## Format
-
-- PDF documents
-- Word documents
-- Decision matrices
+- approve, reject, pend, and escalate rules
+- amount-calculation and benefit-application logic
+- PMB and compliance-sensitive handling
+- fraud or anomaly indicators
+- clinical-review thresholds where applicable
+- network and non-network treatment guidance
 
 ## Usage
 
-These guidelines are used to implement auto-adjudication rules and manual review criteria.
+Use this folder when documenting business reasoning that should inform manual review or future automation.

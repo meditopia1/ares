@@ -1,24 +1,15 @@
 # Training Materials
 
-This folder contains training materials and user guides.
+This folder contains internal training and onboarding material for staff-facing Day1Main workflows.
 
-## Documents to Add
+## Typical Subjects
 
-- Claims assessor training manual
-- Provider portal user guide
-- Member portal user guide
-- Call centre training materials
-- System administrator guide
-- Fraud detection training
-- Compliance training
-
-## Format
-
-- PDF documents
-- PowerPoint presentations
-- Video links
-- Word documents
+- claims operations training
+- provider workflow guidance
+- call centre and member support references
+- administration and compliance training
+- workflow walkthroughs for new dashboard lanes
 
 ## Usage
 
-These materials are used to train staff on system usage and claims processing procedures.
+Use this folder for real reusable training content. One-off implementation notes should live under `project/`, `guides/`, or the relevant business area instead.

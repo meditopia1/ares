@@ -1,26 +1,15 @@
 # Service Level Agreements (SLA)
 
-This folder contains SLA documentation.
+This folder contains service-standard references for operational turnaround expectations.
 
-## Documents to Add
+## Typical Topics
 
-- Claims processing SLA (target: 24 hours for simple claims)
-- Payment processing SLA (statutory: 30 days)
-- Member query response SLA
-- Provider query response SLA
-- Pre-authorization turnaround SLA
-- Appeals processing SLA
-- System uptime SLA (target: 99.9%)
-
-## Format
-
-- PDF documents
-- Word documents
+- claims processing targets
+- payment turnaround expectations
+- provider and member response targets
+- pre-authorization turnaround guidance
+- appeals and exception handling timing
 
 ## Usage
 
-These SLAs define service delivery standards and are used to measure system performance.
-
-## Current Implementation
-
-The system tracks `processing_time_hours` for all claims to measure against SLA targets.
+Use this folder to keep the business SLA references that operations teams actually work from. Product enforcement logic should be documented separately in the relevant project, claims, or finance docs once it becomes system behavior.

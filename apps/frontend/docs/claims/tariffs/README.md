@@ -1,24 +1,15 @@
 # Tariff Codes and Pricing
 
-This folder contains tariff codes, pricing schedules, and rate tables.
+This folder contains tariff and pricing reference material used during claims review and calculation.
 
-## Documents to Add
+## Typical Coverage
 
-- Procedure code list (ICD-10, CPT, etc.)
-- Tariff schedules by provider type
-- Network vs out-of-network rates
-- Co-payment schedules
-- Annual rate updates
-- Specialist consultation rates
-- Hospital admission rates
-- Pharmacy pricing
-
-## Format
-
-- PDF documents
-- Excel spreadsheets
-- CSV files
+- procedure and diagnosis coding references
+- tariff schedules by provider or service type
+- network and non-network pricing treatment
+- co-payment or member-share references
+- annual rate changes and related schedules
 
 ## Usage
 
-These tariffs are used to validate claimed amounts and calculate approved amounts during adjudication.
+Use this folder when the claims process needs a pricing or coding reference behind a payable-amount decision.

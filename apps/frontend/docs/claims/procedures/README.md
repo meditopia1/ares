@@ -1,22 +1,15 @@
 # Claims Processing Procedures
 
-This folder contains step-by-step procedures for processing claims.
+This folder is for reusable claim-processing procedure notes and operating steps.
 
-## Documents to Add
+## Typical Coverage
 
-- Claims submission process
-- Adjudication workflow
-- Payment processing steps
-- Appeals process
-- Escalation procedures
-- Quality assurance procedures
-
-## Format
-
-- PDF documents
-- Word documents
-- Process documentation
+- claim intake and validation steps
+- adjudication and escalation procedures
+- payment and reconciliation procedures
+- appeals and exception handling
+- quality-control checks for claims work
 
 ## Usage
 
-These procedures guide the implementation of claims processing workflows in the system.
+Use this folder for real operational procedures, not temporary implementation status notes.

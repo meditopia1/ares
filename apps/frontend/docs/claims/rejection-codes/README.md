@@ -1,26 +1,14 @@
 # Rejection Codes
 
-This folder contains rejection code definitions and usage guidelines.
+This folder contains rejection-code references and supporting explanation material.
 
-## Documents to Add
+## Typical Coverage
 
-- Complete list of rejection codes
-- When to use each rejection code
-- Member communication templates
-- Provider communication templates
-- Rejection code categories
-- Appeal process for each rejection type
-
-## Format
-
-- PDF documents
-- Excel spreadsheets
-- Word documents
+- rejection-code definitions
+- when each code should be used
+- member and provider communication wording
+- categories and appeal handling references
 
 ## Usage
 
-These rejection codes are used in the claims adjudication system. The system currently has 60 standard rejection codes implemented.
-
-## Current Implementation
-
-See: `apps/frontend/src/lib/rejection-codes.ts` for the implemented codes.
+Use this folder together with the implemented code references in the application so business wording and system behavior stay aligned.

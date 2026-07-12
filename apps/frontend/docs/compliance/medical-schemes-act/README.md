@@ -1,21 +1,14 @@
 # Medical Schemes Act Documentation
 
-This folder contains documentation related to the Medical Schemes Act No. 131 of 1998.
+This folder contains Medical Schemes Act reference material relevant to Day1Main operations and product behavior.
 
-## Documents to Add
+## Typical Coverage
 
-- Medical Schemes Act (full text)
-- Amendments and updates
-- Compliance requirements
-- Reporting requirements
-- Member rights documentation
-- Dispute resolution procedures
-
-## Format
-
-- PDF documents
-- Word documents
+- act text and amendments
+- compliance obligations
+- member-rights references
+- reporting and dispute requirements
 
 ## Usage
 
-These documents ensure the system complies with the Medical Schemes Act requirements.
+Use this folder for statutory references, not for implementation-status notes.

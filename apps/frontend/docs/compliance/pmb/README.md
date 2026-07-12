@@ -1,25 +1,15 @@
 # Prescribed Minimum Benefits (PMB)
 
-This folder contains PMB-related documentation.
+This folder contains PMB reference material used to support compliant claims and benefit handling.
 
-## Documents to Add
+## Typical Coverage
 
-- PMB condition list (270+ conditions)
-- PMB diagnosis codes
-- PMB treatment protocols
-- Emergency care definitions
-- Chronic disease list (27 conditions)
-- PMB claims handling procedures
-
-## Format
-
-- PDF documents
-- Excel spreadsheets
+- PMB condition and diagnosis references
+- treatment-protocol notes
+- emergency care definitions
+- chronic-condition obligations
+- PMB-sensitive claims handling guidance
 
 ## Usage
 
-PMB claims must be approved in full and cannot be rejected based on benefit limits. The system flags PMB claims for priority processing.
-
-## Current Implementation
-
-Claims with `is_pmb: true` are flagged for priority review in the adjudication system.
+Use this folder to support claims and compliance reasoning where PMB obligations affect decisions, escalation, or payment treatment.

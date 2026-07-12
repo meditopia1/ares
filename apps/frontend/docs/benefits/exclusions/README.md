@@ -1,22 +1,16 @@
 # Exclusions and Limitations
 
-This folder contains benefit exclusions and limitations.
+This folder contains benefit exclusions, non-covered scenarios, and limitation wording.
 
-## Documents to Add
+## Typical Topics
 
-- General exclusions (cosmetic procedures, etc.)
-- Plan-specific exclusions
-- Pre-existing condition exclusions
-- Age-related limitations
-- Geographic limitations
-- Provider network limitations
-- Experimental treatment exclusions
-
-## Format
-
-- PDF documents
-- Word documents
+- general exclusions
+- plan-specific exclusions
+- pre-existing condition limits
+- age or geography-based limitations
+- provider-network restrictions
+- experimental or non-covered treatment wording
 
 ## Usage
 
-These exclusions are used to validate claims and determine if a service is covered under the member's plan.
+Use this folder for the business wording behind exclusion decisions. Claims and authorization teams should be able to trace an exclusion outcome back to the reference material stored here.

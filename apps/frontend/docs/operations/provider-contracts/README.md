@@ -1,22 +1,14 @@
 # Provider Contracts
 
-This folder contains provider agreements and contracts.
+This folder holds provider agreement material and commercial reference documents used by Operations and provider administration work.
 
-## Documents to Add
+## Intended Contents
 
-- Standard provider agreement template
-- Network provider contracts
-- Out-of-network provider terms
-- Payment terms and schedules
-- Dispute resolution procedures
-- Provider responsibilities
-- Termination clauses
-
-## Format
-
-- PDF documents
-- Word documents
+- standard provider agreement templates
+- network and out-of-network commercial terms
+- payment and dispute clauses
+- provider responsibilities and termination wording
 
 ## Usage
 
-These contracts define the terms of engagement with healthcare providers and payment obligations.
+Use this folder for real contract references. If a contract term becomes part of active product or workflow logic, summarize that rule in a current project or operations doc instead of leaving it buried only in a contract file.

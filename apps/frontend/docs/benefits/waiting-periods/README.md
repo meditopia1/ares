@@ -1,26 +1,15 @@
 # Waiting Periods
 
-This folder contains waiting period definitions by benefit type.
+This folder contains waiting-period reference material across plans and benefit types.
 
-## Documents to Add
+## Typical Topics
 
-- General waiting period (3 months)
-- Specialist waiting period (3 months)
-- Hospital waiting period (3 months)
-- Maternity waiting period (12 months)
-- Pre-existing condition exclusion periods
-- Waiting period waivers
-- Continuous cover credit rules
-
-## Format
-
-- PDF documents
-- Excel spreadsheets
+- general and specialist waiting periods
+- hospital and maternity waiting periods
+- pre-existing condition timing rules
+- waiting-period waivers
+- continuous-cover credit treatment
 
 ## Usage
 
-These waiting periods are validated during claims submission to ensure members have completed required waiting periods.
-
-## Current Implementation
-
-See: `apps/frontend/src/lib/benefit-validation-server.ts` for waiting period validation logic.
+Use this folder for the business-side reference. When a waiting-period rule is implemented in code, product setup, or claims validation, those implementation points should stay aligned with the material here.

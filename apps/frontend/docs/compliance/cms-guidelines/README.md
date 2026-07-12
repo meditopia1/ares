@@ -1,22 +1,15 @@
 # Council for Medical Schemes (CMS) Guidelines
 
-This folder contains CMS guidelines and circulars.
+This folder contains CMS guideline material relevant to claims, member handling, governance, and regulatory operations.
 
-## Documents to Add
+## Typical Coverage
 
-- CMS circulars
-- Reporting requirements
-- Solvency requirements
-- Governance guidelines
-- Fraud prevention guidelines
-- Member communication requirements
-- Claims processing timelines (30-day payment requirement)
-
-## Format
-
-- PDF documents
-- Word documents
+- circulars and notices
+- reporting and governance requirements
+- fraud and member-communication guidance
+- payment and turnaround expectations
+- operational obligations that influence product or claims processes
 
 ## Usage
 
-These guidelines ensure the system meets CMS regulatory requirements, including the statutory 30-day payment requirement for claims.
+Use this folder for compliance reference material that teams may need to trace back during policy, claims, or operations decisions.

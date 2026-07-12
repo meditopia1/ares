@@ -1,52 +1,24 @@
 # Claim Forms and Templates
 
-This folder contains all claim forms and templates used by providers and members.
+This folder contains the claim-form source documents used for claims intake, document comparison, and future member-upload flows.
 
-## Documents to Add
+## Current Use In Day1Main
 
-### Standard Claim Forms
-- Provider claim submission form
-- Member refund claim form
-- Pre-authorization request form
-- Appeal form
-- Supporting document checklist
-- Claim amendment form
+- hospital claim forms support the hospital claims register workflow
+- claim forms should usually be compared against an existing GOP-backed claim record, not treated as a brand-new live claim by default
+- future member dashboard uploads will use these forms as source documents once that entry point is live
 
-### Specialized Claim Forms
-- **Funeral claim form** - For funeral benefit claims
-- **Cession form** - For assignment of benefits to providers
-- Hospital admission form
-- Maternity claim form
-- Chronic medication claim form
-- Emergency claim form
+## Current Reference Documents
 
-### Supporting Documents
-- Medical certificate templates
-- Death certificate requirements (for funeral claims)
-- Proof of payment templates
-- Bank confirmation forms
-
-## Format
-
-- PDF forms (fillable or static)
-- Word templates
-- Excel templates
+- funeral claim form
+- cession form
+- hospital claim form
+- pre-authorization source forms where relevant
 
 ## Usage
 
-These forms define the data fields required for claim submission and can be used as reference for UI design.
+Use these files when:
 
-## Special Notes
-
-**Funeral Claims:**
-- Require death certificate
-- May require funeral invoice
-- Beneficiary information required
-- Cession may be needed if paid directly to funeral parlor
-
-**Cession Forms:**
-- Used when member assigns benefits to provider
-- Provider receives payment directly
-- Member signs authorization
-- Common for hospital admissions and funeral claims
-
+- validating which fields should be captured or compared
+- checking whether a submitted claim form materially differs from the existing database record
+- designing future upload and review flows for members or staff

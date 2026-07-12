@@ -1,80 +1,21 @@
 # Pre-Authorization Documentation
 
-This folder contains all pre-authorization and Guarantee of Payment (GOP) related documents.
+This folder contains the GOP and pre-authorization source documents used by the Authorization and Claims workflows.
 
-## Documents to Add
+## Current Flow Context
 
-### Guarantee of Payment (GOP)
-- GOP request forms
-- GOP approval templates
-- GOP validity periods
-- GOP terms and conditions
-- GOP number format and generation rules
-- GOP tracking procedures
+- Africa Assist users verify the member and benefit first, then submit a GOP into the hospital claims intake queue.
+- Claims users can also upload a GOP or application directly from the hospital claims workspace.
+- GOP submissions must be reviewed before insertion into the live hospital claims register.
 
-### Pre-Authorization
-- Pre-authorization request forms
-- Pre-authorization approval criteria
-- Pre-authorization validity periods
-- Services requiring pre-auth
-- Emergency pre-auth procedures
-- Retrospective authorization rules
+## What This Folder Contains
 
-### Hospital Admissions
-- Planned admission pre-auth
-- Emergency admission procedures
-- GOP for hospital stays
-- GOP for surgical procedures
-- GOP for specialist procedures
-
-### Procedures
-- GOP issuance process
-- GOP verification process
-- GOP expiry and renewal
-- GOP cancellation procedures
-- GOP dispute resolution
-
-## Format
-
-- PDF documents
-- Word documents
-- Excel templates
-
-## Usage
-
-GOP documents are used to:
-- Authorize treatment before it occurs
-- Guarantee payment to providers
-- Manage high-value claims
-- Reduce claim rejections
-- Improve provider confidence
-
-## System Integration
-
-The pre-authorization system will:
-- Generate GOP numbers
-- Track GOP validity
-- Link GOP to claims
-- Validate claims against GOP
-- Flag expired GOP
-
-## Current Status
-
-⚠️ Pre-authorization system is not yet implemented (5% remaining work).
-
-When implemented, it will:
-- Issue GOP electronically
-- Track GOP usage
-- Validate claims against GOP
-- Alert on GOP expiry
-- Generate GOP reports
-
-## Related Tables (To Be Created)
-
-- `pre_authorizations` - Pre-auth requests and GOP records
-- `pre_auth_services` - Services covered by GOP
-- `pre_auth_documents` - Supporting documents
+- plan-specific GOP examples
+- pre-authorization source PDFs
+- wording and field references for OCR and review flows
 
 ## Related Files
 
-- See: `../workspace/CLAIMS_WORKSPACE_EXCEL_PLUS_DESIGN.md` and `../../project/STRUCTURE_IMPLEMENTATION_SUMMARY.md`
+- [../workspace/CLAIMS_WORKSPACE_EXCEL_PLUS_DESIGN.md](../workspace/CLAIMS_WORKSPACE_EXCEL_PLUS_DESIGN.md)
+- [../workspace/HOSPITAL_CLAIMS_TEST_SCENARIOS.md](../workspace/HOSPITAL_CLAIMS_TEST_SCENARIOS.md)
+- [../../project/STRUCTURE_IMPLEMENTATION_SUMMARY.md](../../project/STRUCTURE_IMPLEMENTATION_SUMMARY.md)

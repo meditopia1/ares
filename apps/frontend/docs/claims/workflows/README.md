@@ -1,25 +1,15 @@
 # Claims Workflows
 
-This folder contains process flowcharts, decision trees, and workflow diagrams.
+This folder contains process maps and workflow references for claims-related journeys.
 
-## Documents to Add
+## Typical Coverage
 
-- Claims submission workflow
-- Adjudication decision tree
-- Payment processing workflow
-- Pre-authorization workflow
-- Appeals workflow
-- Fraud investigation workflow
-- Escalation procedures
-- SLA timelines
-
-## Format
-
-- PDF documents
-- Image files (PNG, JPG)
-- Visio diagrams
-- Draw.io files
+- hospital claims intake workflow
+- GOP verification and acceptance workflow
+- claim-form comparison and review workflow
+- payment, escalation, and exception journeys
+- authorization and claims handoff flows
 
 ## Usage
 
-These workflows guide the implementation of claims processing logic and help visualize the complete process flow.
+Use this folder for visual or written flow references that support implementation and operations.

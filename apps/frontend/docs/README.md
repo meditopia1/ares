@@ -9,8 +9,10 @@ This is the single documentation home for the Day1Main project.
 - [project/MEDICAL_INSURER_OPERATING_MODEL_REFERENCE.md](./project/MEDICAL_INSURER_OPERATING_MODEL_REFERENCE.md) - current medical-insurer operating model reference
 - [project/STRUCTURE_IMPLEMENTATION_SUMMARY.md](./project/STRUCTURE_IMPLEMENTATION_SUMMARY.md) - current project structure summary
 - [project/TECH_STACK.md](./project/TECH_STACK.md) - current technology stack
+- [project/CURRENT_PROVIDER_WORKSTATE.md](./project/CURRENT_PROVIDER_WORKSTATE.md) - current provider documentation baseline
 - [claims/workspace/CLAIMS_WORKSPACE_EXCEL_PLUS_DESIGN.md](./claims/workspace/CLAIMS_WORKSPACE_EXCEL_PLUS_DESIGN.md) - hospital claims workspace plan and current flow
 - [netcash/README.md](./netcash/README.md) - Netcash collection and payment processing
+- [netcash/CURRENT_NETCASH_WORKSTATE.md](./netcash/CURRENT_NETCASH_WORKSTATE.md) - current Netcash implementation baseline
 
 ## Current Dashboard Roles
 
@@ -33,7 +35,7 @@ In Day1Main planning, a **role** means a unique dashboard or portal experience w
 
 ### `project/`
 
-Project-level references, system setup, dashboard roles, plans, member filters, import templates, and provider TODOs.
+Project-level references, system setup, dashboard roles, plans, member filters, import templates, and current provider workstate.
 
 ### `data/`
 

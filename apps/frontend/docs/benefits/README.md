@@ -1,17 +1,17 @@
 # Benefits Documentation
 
-This folder contains all benefit-related documentation including limits, waiting periods, and exclusions.
+This folder contains current benefit-rule reference material used to support product setup, claims logic, and authorization checks.
 
-## Folder Structure
+## Current Scope
 
-- **limits/** - Benefit limits and annual caps
-- **waiting-periods/** - Waiting period definitions by benefit type
-- **exclusions/** - Exclusions and limitations
+- `limits/` - annual caps, sub-limits, and benefit ceilings
+- `waiting-periods/` - waiting period rules and timing references
+- `exclusions/` - exclusions, limitations, and non-covered scenarios
 
 ## Usage
 
-These documents define the benefit rules that are implemented in the system's benefit validation logic.
+Use this folder for benefit-reference material that supports real business rules. If a rule is actively implemented in the app or database logic, make sure the canonical product or project docs also reflect it.
 
 ## Last Updated
 
-April 16, 2026
+July 12, 2026

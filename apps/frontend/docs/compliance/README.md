@@ -1,17 +1,17 @@
 # Compliance Documentation
 
-This folder contains regulatory and compliance documentation.
+This folder contains the current regulatory and compliance reference material that should guide Day1Main product and operational decisions.
 
-## Folder Structure
+## Current Scope
 
-- **medical-schemes-act/** - Medical Schemes Act requirements
-- **pmb/** - Prescribed Minimum Benefits documentation
-- **cms-guidelines/** - Council for Medical Schemes guidelines
+- `medical-schemes-act/` - Medical Schemes Act references
+- `pmb/` - PMB and related benefit obligations
+- `cms-guidelines/` - Council for Medical Schemes guidance material
 
 ## Usage
 
-These documents ensure the system complies with South African medical scheme regulations.
+Use this folder as the compliance-side reference set. If a rule becomes system behavior, the relevant product, claims, finance, or project docs should also reflect it.
 
 ## Last Updated
 
-April 16, 2026
+July 12, 2026

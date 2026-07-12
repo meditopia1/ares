@@ -1,6 +1,6 @@
 # Day1Main Project Structure Summary
 
-**Last updated:** July 11, 2026
+**Last updated:** July 12, 2026
 
 This document replaces older project structure notes. The single documentation home is `apps/frontend/docs`.
 
@@ -68,7 +68,7 @@ The canonical role reference is [CURRENT_DASHBOARD_ROLES.md](./CURRENT_DASHBOARD
 
 ```text
 apps/frontend/docs/
-├── project/                   # Project-level references and current role definitions
+├── project/                   # Project-level references, current role definitions, provider workstate
 ├── claims/                    # Claims, GOP, forms, workflows, hospital claims workspace
 ├── netcash/                   # Netcash collection, debit order, webhook, refund docs
 ├── benefits/                  # Benefit rules, waiting periods, limits, exclusions
@@ -84,6 +84,7 @@ apps/frontend/docs/
 ## Current Process Notes
 
 - Netcash is the active payment collection path.
+- The canonical Netcash status note is `apps/frontend/docs/netcash/CURRENT_NETCASH_WORKSTATE.md`.
 - Qsure material has been removed from active documentation.
 - Current infrastructure direction is documented in [CURRENT_INFRASTRUCTURE.md](./CURRENT_INFRASTRUCTURE.md).
 - The feedback feature has been removed from runtime navigation and API routes.

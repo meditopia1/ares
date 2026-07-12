@@ -1,17 +1,17 @@
 # Operations Documentation
 
-This folder contains operational documentation including provider contracts, SLAs, and training materials.
+This folder contains current operational reference material for service delivery, provider relationships, and internal training support.
 
-## Folder Structure
+## Current Scope
 
-- **provider-contracts/** - Provider agreements and contracts
-- **sla/** - Service level agreements
-- **training/** - Training materials and guides
+- `provider-contracts/` - provider agreements, templates, and commercial terms
+- `sla/` - turnaround expectations and service standards
+- `training/` - internal operating guidance and staff enablement material
 
 ## Usage
 
-These documents guide operational processes and service delivery standards.
+Use this folder for current operating references only. Do not use it for stale build-status notes or speculative implementation plans that belong under `project/`.
 
 ## Last Updated
 
-April 16, 2026
+July 12, 2026

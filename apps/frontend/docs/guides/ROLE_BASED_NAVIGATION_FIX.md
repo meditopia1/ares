@@ -1,14 +1,10 @@
-# Dashboard Role Navigation Fix
+# Dashboard Role Navigation Reference
 
-This is a navigation implementation note. In current Day1Main planning, a **role** means a unique dashboard/portal lane with its own sidebar and workflow. RBAC/database roles may be more granular.
+This guide records the current role-based navigation model. In Day1Main planning, a **role** means a unique dashboard or portal lane with its own sidebar and workflow. RBAC and database roles may be more granular.
 
 Current dashboard role reference: `apps/frontend/docs/project/CURRENT_DASHBOARD_ROLES.md`
 
-## Problem
-Every user account showed the same sidebar navigation regardless of their role. An admin, member, broker, and claims assessor all saw identical menu items.
-
-## Solution
-Implemented role-based navigation that dynamically changes the sidebar menu based on the logged-in user's role.
+Use this file as a route and sidebar reference, not as a temporary fix note.
 
 ## Navigation by Role
 
@@ -124,9 +120,9 @@ The `SidebarLayout` component now includes a `getNavigationForRole()` function t
 3. Returns the appropriate navigation items for that role
 4. Dynamically renders the sidebar menu
 
-## Testing
+## Demo Accounts
 
-### Test Each Role:
+Use these only as test/demo references while they remain active in the environment.
 
 **1. Admin:**
 ```
@@ -184,12 +180,10 @@ Password: afri123
 Expected: See Authorization Dashboard, Hospital Benefit Check, GOP Intake, Verification History
 ```
 
-## Files Modified
+## Implementation Location
 
 - `apps/frontend/src/components/layout/sidebar-layout.tsx`
-  - Added `getNavigationForRole()` function
-  - Replaced hardcoded navigation array with dynamic role-based navigation
-  - Added role detection logic
+  - dynamic sidebar selection by role
 
 ## Expected Behavior
 
@@ -200,11 +194,4 @@ Expected: See Authorization Dashboard, Hospital Benefit Check, GOP Intake, Verif
 ✅ **Each role has appropriate access** to their functional areas
 ✅ **User info still displays correctly** (name, email, avatar initials)
 
-## Next Steps
-
-After clearing browser cache and logging in with different accounts, you should now see:
-- Different sidebar menus for each role
-- Role-appropriate navigation items
-- Correct user information (name, email, avatar)
-
-The navigation is now properly personalized for each user type!
+This file should be updated only when a route, sidebar, or dashboard-role grouping actually changes.

@@ -1,6 +1,10 @@
 # Voice Recording & Signature Storage Fix
 
-## Issue Identified
+## Purpose
+
+This guide records the storage-backed approach for voice recordings and digital signatures in the application flow.
+
+## Original Issue
 Voice recordings and digital signatures were being stored as temporary blob URLs instead of permanent Supabase Storage URLs. This caused:
 - Voice recordings showing "0:00 / 0:00" duration
 - Files not accessible after browser refresh
@@ -9,7 +13,7 @@ Voice recordings and digital signatures were being stored as temporary blob URLs
 ## Root Cause
 The Step 6 component was creating blob URLs (`blob:http://localhost:3001/...`) which are temporary browser memory references, not permanent storage.
 
-## Solution Implemented
+## Current Solution
 
 ### 1. Created Storage Utility (`apps/frontend/src/lib/storage.ts`)
 - `uploadVoiceRecording()` - Uploads audio blob to Supabase Storage
@@ -51,29 +55,14 @@ applications/
     └── selfie/
 ```
 
-## Changes Made
+## Key Files
 
-### Files Modified:
 1. `apps/frontend/src/components/apply-steps/Step6ReviewTermsSubmit.tsx`
-   - Added storage upload imports
-   - Added upload state management
-   - Modified voice recording to upload after recording
-   - Modified signature save to upload after drawing
-   - Added upload progress indicators
+2. `apps/frontend/src/lib/storage.ts`
 
-### Files Created:
-1. `apps/frontend/src/lib/storage.ts` - Storage utility functions
-2. `check-storage-bucket.js` - Script to verify/create storage bucket
+## Verification
 
-## Testing Required
-
-### Before Testing:
-- ✅ Supabase Storage bucket created
-- ✅ Storage utility functions implemented
-- ✅ Step 6 component updated
-- ⚠️  Frontend needs restart to load new code
-
-### Test Steps:
+### Test Steps
 1. **Restart Frontend Server:**
    ```bash
    # Stop current server (Ctrl+C)
@@ -131,23 +120,6 @@ Both fields store permanent Supabase Storage URLs:
 - `voice_recording_url` - `https://<current-supabase-url>/storage/v1/object/public/applications/voice/...`
 - `signature_url` - `https://<current-supabase-url>/storage/v1/object/public/applications/signatures/...`
 
-## Rollback Plan
-If issues occur:
-1. Revert `Step6ReviewTermsSubmit.tsx` to previous version
-2. Remove `apps/frontend/src/lib/storage.ts`
-3. System will work with blob URLs (temporary but functional)
+## Notes
 
-## Next Steps
-1. ✅ Storage bucket created
-2. ✅ Code updated
-3. 🔲 Restart frontend server
-4. 🔲 Test voice recording upload
-5. 🔲 Test signature upload
-6. 🔲 Submit test application
-7. 🔲 Verify in admin panel
-
----
-
-**Status:** ✅ Code ready, needs frontend restart and testing  
-**Priority:** High - Required for CEO demo  
-**Impact:** Fixes critical data persistence issue
+Keep this guide aligned with the live Step 6 implementation and the current storage bucket setup. Treat it as an operational reference, not as a temporary incident report.

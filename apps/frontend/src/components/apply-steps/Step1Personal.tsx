@@ -346,7 +346,7 @@ export default function Step1Personal({ data, updateData, nextStep }: Props) {
       
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-3" style={{ marginTop: '0px' }}>
-          <img src="/Logo.jpg" alt="Day1Health" style={{ height: '78px', width: 'auto' }} />
+          <img src="/Favicon.png" alt="Altira Orbit" className="h-12 w-12 rounded-lg object-contain" />
           <h2 className="text-lg font-bold">Personal Information</h2>
         </div>
         

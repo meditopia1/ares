@@ -1,7 +1,7 @@
 # Member Administration Filters - Best Practice Reference
 
 ## Overview
-The Member Administration page now includes comprehensive filtering capabilities to efficiently manage and search through all 3,581+ members in the system.
+The Member Administration page includes comprehensive filtering capabilities to efficiently manage and search through the current live member base.
 
 ## Dashboard Statistics (Real-time)
 - **Total Members**: All members in the database
@@ -54,8 +54,8 @@ The Member Administration page now includes comprehensive filtering capabilities
 **Purpose**: Filter members by their insurance plan
 **Options**: Dynamically loaded from unique plan names in members table
 - All Plans (default)
-- DAY1 VALUE PLUS PLAN
-- DAY1 EXECUTIVE PLAN
+- VALUE PLUS PLAN
+- EXECUTIVE PLAN
 - SENIOR COMPREHENSIVE PLAN
 - And all other plan variants
 
@@ -111,7 +111,7 @@ The Member Administration page now includes comprehensive filtering capabilities
 
 1. **Active VALUE PLUS Members**
    - Status: Active
-   - Plan: DAY1 VALUE PLUS PLAN
+   - Plan: VALUE PLUS PLAN
    - Use: Marketing campaigns, plan-specific communications
 
 2. **Suspended Members by Broker**
@@ -169,7 +169,8 @@ The Member Administration page now includes comprehensive filtering capabilities
 
 ---
 
-**Last Updated**: February 27, 2026
-**Total Members**: 3,581
+**Last Updated**: July 15, 2026
+**Current Live Members Table Count**: 1,068
+**Current Live Combined Member Admin Total**: 2,053
 **Active Filters**: 6 essential filters
 **Status**: Production Ready

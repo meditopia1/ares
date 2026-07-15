@@ -206,12 +206,12 @@ export default function ApplicationSubmittedPage() {
               onClick={() => {
                 const element = document.createElement('a');
                 const content = `
-Day1Health Application Confirmation
+Altira Orbit Application Confirmation
 
 Application Reference: ${ref || 'N/A'}
 Date: ${new Date().toLocaleDateString()}
 
-Thank you for applying with Day1Health!
+Thank you for applying with Altira Orbit!
 
 What happens next:
 1. Application Review - Our team will review your application and verify your documents within 1 hour.
@@ -228,7 +228,7 @@ Please keep this confirmation for your records.
                 `.trim();
                 const file = new Blob([content], { type: 'text/plain' });
                 element.href = URL.createObjectURL(file);
-                element.download = `Day1Health-Application-${ref || 'Confirmation'}.txt`;
+                element.download = `Altira-Orbit-Application-${ref || 'Confirmation'}.txt`;
                 document.body.appendChild(element);
                 element.click();
                 document.body.removeChild(element);

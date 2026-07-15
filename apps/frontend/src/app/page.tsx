@@ -18,7 +18,7 @@ export default function Home() {
       >
         <nav className="absolute top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-sm border-b-2 border-green-600">
           <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-            <img src="/Logo.jpg" alt="Day1Health" className="h-12 w-auto" />
+            <img src="/Logo.png" alt="Altira Orbit" className="h-12 w-auto" />
             <div className="flex items-center gap-4">
               <Link href="/login">
                 <Button className="bg-green-600 hover:bg-green-700 text-white">Log-in</Button>
@@ -29,14 +29,8 @@ export default function Home() {
 
         <div className="container mx-auto px-4 text-center" style={{ paddingTop: '170px' }}>
           <div className="max-w-3xl mx-auto">
-            <div className="flex justify-center mb-12">
-              <div className="relative inline-block p-8 bg-white/60 backdrop-blur-[10px] backdrop-saturate-[110%] border-2 border-green-600 rounded-2xl shadow-xl">
-                <img src="/Logo.jpg" alt="Day1Health" className="h-40 w-auto" />
-              </div>
-            </div>
-
             <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-8">
-              Welcome to Day1Health
+              Welcome to Altira Orbit
             </h1>
             <p className="text-2xl text-gray-700 mb-8">
               Transforming healthcare administration with intelligent automation, seamless compliance, and member-first innovation
@@ -114,7 +108,7 @@ export default function Home() {
 
       <footer className="border-t bg-white">
         <div className="container mx-auto px-4 py-8 text-center">
-          <p className="text-sm text-gray-600">&copy; 2026 Day1Health. All rights reserved.</p>
+          <p className="text-sm text-gray-600">&copy; 2026 Altira Orbit. All rights reserved.</p>
         </div>
       </footer>
     </main>

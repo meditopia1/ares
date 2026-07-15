@@ -1,6 +1,6 @@
 # Current Infrastructure
 
-**Last updated:** July 12, 2026
+**Last updated:** July 15, 2026
 
 This document is the current infrastructure reference for Day1Main. It replaces the older Google Cloud / Cloud SQL self-hosting plan.
 
@@ -31,3 +31,4 @@ The previous Google Cloud Johannesburg / Cloud SQL / Cloud Run self-hosted Supab
 - Keep one-off SQL exports/imports out of Git unless they are promoted to a reviewed migration.
 - Keep payment-provider documentation separated by provider. Netcash documentation belongs in `apps/frontend/docs/netcash`.
 - Keep claims/GOP documentation under `apps/frontend/docs/claims`.
+- The current live data snapshot and cleanup state belong in `apps/frontend/docs/project/CURRENT_DATABASE_SNAPSHOT.md`.

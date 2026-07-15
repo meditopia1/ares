@@ -5,6 +5,7 @@ This is the single documentation home for the Day1Main project.
 ## Start Here
 
 - [project/CURRENT_DASHBOARD_ROLES.md](./project/CURRENT_DASHBOARD_ROLES.md) - current dashboard role definition
+- [project/CURRENT_DATABASE_SNAPSHOT.md](./project/CURRENT_DATABASE_SNAPSHOT.md) - current live member, dependant, broker, and cleanup snapshot
 - [project/CURRENT_INFRASTRUCTURE.md](./project/CURRENT_INFRASTRUCTURE.md) - current hosting, database, and environment direction
 - [project/MEDICAL_INSURER_OPERATING_MODEL_REFERENCE.md](./project/MEDICAL_INSURER_OPERATING_MODEL_REFERENCE.md) - current medical-insurer operating model reference
 - [project/STRUCTURE_IMPLEMENTATION_SUMMARY.md](./project/STRUCTURE_IMPLEMENTATION_SUMMARY.md) - current project structure summary
@@ -87,4 +88,4 @@ Local/private notes that should not be treated as public product documentation.
 
 ## Last Updated
 
-July 12, 2026
+July 15, 2026

@@ -368,16 +368,23 @@ export default function AdminDashboardPage() {
 
   return (
     <SidebarLayout>
-      <div className="space-y-6">
+      <div className="-m-6 min-h-[calc(100vh-4rem)] space-y-6 bg-[linear-gradient(180deg,#f8fafc_0%,#eef6f4_52%,#f8fafc_100%)] p-6">
         {/* Page Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-600 mt-1">System overview and pending items</p>
+        <div className="rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h1 className="text-3xl font-semibold text-slate-950">Admin Dashboard</h1>
+              <p className="mt-1 text-sm text-slate-500">System overview and pending items</p>
+            </div>
+            <div className="hidden rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-800 sm:block">
+              Altira Orbit presentation view
+            </div>
+          </div>
         </div>
 
         {/* System Statistics */}
-        <div className="rounded-2xl border border-slate-200/90 bg-white/80 p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">System Statistics</h2>
+        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          <h2 className="mb-3 text-base font-semibold text-slate-950">System Statistics</h2>
           {loadingStats ? (
             <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
               {[...Array(6)].map((_, i) => (
@@ -394,6 +401,7 @@ export default function AdminDashboardPage() {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
               <DashboardMetricCard
+                variant="executive"
                 title="Total Members"
                 value={stats.totalMembers.toLocaleString()}
                 icon={<Users className="w-6 h-6 text-cyan-600" />}
@@ -403,6 +411,7 @@ export default function AdminDashboardPage() {
                 iconBackgroundClassName="bg-cyan-100"
               />
               <DashboardMetricCard
+                variant="executive"
                 title="Active Policies"
                 value={stats.activeMembers.toLocaleString()}
                 subtitle={`${stats.pendingMembers} pending • ${stats.suspendedMembers} suspended`}
@@ -414,6 +423,7 @@ export default function AdminDashboardPage() {
                 iconBackgroundClassName="bg-green-100"
               />
               <DashboardMetricCard
+                variant="executive"
                 title="Pending Claims"
                 value={stats.pendingClaims}
                 valueClassName="text-yellow-600"
@@ -424,6 +434,7 @@ export default function AdminDashboardPage() {
                 iconBackgroundClassName="bg-yellow-100"
               />
               <DashboardMetricCard
+                variant="executive"
                 title="Pending Preauths"
                 value={stats.pendingPreauths}
                 valueClassName="text-orange-600"
@@ -434,6 +445,7 @@ export default function AdminDashboardPage() {
                 iconBackgroundClassName="bg-orange-100"
               />
               <DashboardMetricCard
+                variant="executive"
                 title="Providers"
                 value={stats.totalProviders}
                 icon={<Building2 className="w-6 h-6 text-blue-600" />}
@@ -443,6 +455,7 @@ export default function AdminDashboardPage() {
                 iconBackgroundClassName="bg-blue-100"
               />
               <DashboardMetricCard
+                variant="executive"
                 title="Active Brokers"
                 value={stats.activeBrokers}
                 icon={<CreditCard className="w-6 h-6 text-purple-600" />}
@@ -456,10 +469,11 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Financial Overview */}
-        <div className="rounded-2xl border border-slate-200/90 bg-white/80 p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Financial Overview (MTD)</h2>
+        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          <h2 className="mb-3 text-base font-semibold text-slate-950">Financial Overview (MTD)</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <DashboardMetricCard
+              variant="executive"
               title="Monthly Premium"
               value={`R${financialStats.monthlyPremium.toLocaleString()}`}
               subtitle="No movement yet"
@@ -470,6 +484,7 @@ export default function AdminDashboardPage() {
               iconBackgroundClassName="bg-cyan-100"
             />
             <DashboardMetricCard
+              variant="executive"
               title="Claims Paid"
               value={`R${financialStats.claimsPaid.toLocaleString()}`}
               subtitle="No claims yet"
@@ -480,6 +495,7 @@ export default function AdminDashboardPage() {
               iconBackgroundClassName="bg-green-100"
             />
             <DashboardMetricCard
+              variant="executive"
               title="Outstanding Claims"
               value={`R${financialStats.outstandingClaims.toLocaleString()}`}
               subtitle="0 claims"
@@ -490,6 +506,7 @@ export default function AdminDashboardPage() {
               iconBackgroundClassName="bg-blue-100"
             />
             <DashboardMetricCard
+              variant="executive"
               title="Cash Reserves"
               value={`R${financialStats.cashReserves.toLocaleString()}`}
               subtitle="No reserves yet"
@@ -503,7 +520,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Alerts */}
-        <Card>
+        <Card className="rounded-lg border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
           <CardHeader>
             <CardTitle>System Alerts</CardTitle>
             <CardDescription>Important notifications requiring attention</CardDescription>
@@ -524,7 +541,7 @@ export default function AdminDashboardPage() {
             ) : alerts.length > 0 ? (
               <div className="space-y-3">
                 {alerts.map((alert) => (
-                  <div key={alert.id} className="flex items-start gap-3 p-3 border rounded-lg">
+                  <div key={alert.id} className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3">
                     {getAlertIcon(alert.type)}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900">{alert.title}</p>
@@ -544,7 +561,7 @@ export default function AdminDashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Pending Approvals */}
-          <Card>
+          <Card className="rounded-lg border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -578,7 +595,7 @@ export default function AdminDashboardPage() {
                   {pendingApprovals.map((approval) => (
                     <div
                       key={approval.id}
-                      className="flex items-start gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                      className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3 transition-colors hover:bg-slate-50"
                       onClick={() => router.push('/admin/applications')}
                     >
                       <div className="flex-1 min-w-0">
@@ -606,7 +623,7 @@ export default function AdminDashboardPage() {
           </Card>
 
           {/* Recent Activity */}
-          <Card>
+          <Card className="rounded-lg border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
             <CardHeader>
               <CardTitle>Recent Activity</CardTitle>
               <CardDescription>Latest system events</CardDescription>
@@ -648,7 +665,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <Card>
+        <Card className="rounded-lg border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>

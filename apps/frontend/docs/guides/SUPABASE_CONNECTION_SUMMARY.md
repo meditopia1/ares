@@ -23,6 +23,7 @@ Real values belong in local `.env.local` files or deployment secret stores, not 
 
 Current infrastructure direction is documented in `apps/frontend/docs/project/CURRENT_INFRASTRUCTURE.md`.
 Supabase migrations and operational helpers live in `supabase/`.
+The current live data snapshot is documented in `apps/frontend/docs/project/CURRENT_DATABASE_SNAPSHOT.md`.
 
 ## Quick Test
 
@@ -45,6 +46,17 @@ Core tables:
 - `users`, `roles`, `permissions`
 - `claims`, `providers`, `products`, `brokers`
 - `hospital_claim_intakes`, `hospital_claims_register`, and related hospital-claims tables
+
+## Current Live Snapshot
+
+As of July 15, 2026, the active live database snapshot is:
+
+- `members`: `1068`
+- `member_dependants`: `985`
+- combined member admin total: `2053`
+- `brokers`: `17`
+
+Operational cleanup notes such as removed `DAY1` members, removed `NAV` / `DAY1` broker rows, and `plan_name` normalization live in `apps/frontend/docs/project/CURRENT_DATABASE_SNAPSHOT.md`.
 
 ## Security Notes
 

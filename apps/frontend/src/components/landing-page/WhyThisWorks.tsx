@@ -52,7 +52,7 @@ export function WhyThisWorks() {
           </h2>
           <div className="max-w-3xl mx-auto space-y-4 text-lg text-gray-700 leading-relaxed">
             <p>
-              Traditional medical aid makes you choose a full plan first. Day1Health flips that.
+              Traditional medical aid makes you choose a full plan first. We flip that.
             </p>
           </div>
         </div>
@@ -124,7 +124,7 @@ export function WhyThisWorks() {
               <div className={`w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 relative z-10 border-2 border-gray-200 shadow-sm transition-transform duration-300 ${circle3Pop ? 'animate-pop' : ''}`}>
                 <img src="/animated icons/one.gif" alt="One" className="w-12 h-12 opacity-60" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Covered from Day 1</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Covered from day 1</h3>
               <p className="text-sm text-gray-600">
                 No waiting periods. Protection starts immediately
               </p>

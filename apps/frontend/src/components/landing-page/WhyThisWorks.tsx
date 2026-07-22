@@ -48,7 +48,7 @@ export function WhyThisWorks() {
         {/* Headline */}
         <div className="text-center mb-8">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Pick the <span className="text-green-600">ONE</span> cover you need NOW. We'll show you the plan.
+            Pick the <span className="text-green-600">ONE</span> cover you need now. We'll show you the plan.
           </h2>
           <div className="max-w-3xl mx-auto space-y-4 text-lg text-gray-700 leading-relaxed">
             <p>

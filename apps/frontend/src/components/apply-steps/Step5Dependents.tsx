@@ -25,8 +25,14 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { CalendarIcon } from "lucide-react"
-import { format } from "date-fns"
+import { format, isValid } from "date-fns"
 import { DropdownNavProps, DropdownProps } from "react-day-picker"
+
+const parseValidDate = (value?: string) => {
+  if (!value) return undefined
+  const parsed = new Date(value)
+  return isValid(parsed) ? parsed : undefined
+}
 
 interface Props {
   data: ApplicationData
@@ -87,7 +93,7 @@ export default function Step5Dependents({ data, updateData, nextStep, prevStep }
 
   const handleEdit = (index: number) => {
     setFormData(dependents[index])
-    setDate(dependents[index].dateOfBirth ? new Date(dependents[index].dateOfBirth) : undefined)
+    setDate(parseValidDate(dependents[index].dateOfBirth))
     setEditIndex(index)
     setShowForm(true)
   }
@@ -204,7 +210,7 @@ export default function Step5Dependents({ data, updateData, nextStep, prevStep }
                     className={`w-full justify-start text-left font-normal h-8 px-2 text-sm ${!date && "text-muted-foreground"}`}
                   >
                     <CalendarIcon className="mr-2 h-3 w-3" />
-                    {date ? format(date, "PPP") : <span>Select date of birth</span>}
+                    {date && isValid(date) ? format(date, "PPP") : <span>Select date of birth</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">

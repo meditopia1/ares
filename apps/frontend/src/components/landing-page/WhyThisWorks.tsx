@@ -48,7 +48,7 @@ export function WhyThisWorks() {
         {/* Headline */}
         <div className="text-center mb-8">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Pick the <span className="text-green-600">ONE</span> cover you need. We'll show you the plan.
+            Pick the <span className="text-green-600">ONE</span> cover you need NOW. We'll show you the plan.
           </h2>
           <div className="max-w-3xl mx-auto space-y-4 text-lg text-gray-700 leading-relaxed">
             <p>
@@ -91,7 +91,7 @@ export function WhyThisWorks() {
             </svg>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-12">
+          <div className="grid md:grid-cols-3 gap-12 items-start">
             {/* Step 1 */}
             <div className={`flex flex-col items-center text-center transition-all duration-700 ${step1Visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
               <div className="mb-4 text-2xl font-bold text-gray-900">1</div>
@@ -118,11 +118,14 @@ export function WhyThisWorks() {
 
             {/* Step 3 */}
             <div className={`flex flex-col items-center text-center transition-all duration-700 ${step3Visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-              <div className="mb-4">
-                <img src="/animated icons/umbrella.gif" alt="Protection" className="w-12 h-12 opacity-60" />
-              </div>
-              <div className={`w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 relative z-10 border-2 border-gray-200 shadow-sm transition-transform duration-300 ${circle3Pop ? 'animate-pop' : ''}`}>
-                <img src="/animated icons/one.gif" alt="One" className="w-12 h-12 opacity-60" />
+              <div className="mb-4 text-2xl font-bold text-transparent select-none">3</div>
+              <div className="relative mb-6">
+                <div className="pointer-events-none absolute -top-12 left-1/2 -translate-x-1/2">
+                  <img src="/animated icons/umbrella.gif" alt="Protection" className="w-12 h-12 opacity-60" />
+                </div>
+                <div className={`w-24 h-24 bg-white rounded-full flex items-center justify-center relative z-10 border-2 border-gray-200 shadow-sm transition-transform duration-300 ${circle3Pop ? 'animate-pop' : ''}`}>
+                  <img src="/animated icons/one.gif" alt="One" className="w-12 h-12 opacity-60" />
+                </div>
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">Covered from day 1</h3>
               <p className="text-sm text-gray-600">
